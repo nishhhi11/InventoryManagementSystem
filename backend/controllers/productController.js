@@ -78,18 +78,43 @@ const createProduct = async (req, res) => {
 
 const getProducts = async (req, res) => {
     try {
+        const { search, category, lowStock } = req.query;
+
         const filter = {};
 
-        if (req.query.lowStock === "true") {
+        if (search) {
+            filter.name = {
+                $regex: search,
+                $options: "i"
+            };
+        }
+
+        if (category) {
+            const categoryExists = await Category.findOne({
+                name: {
+                    $regex: `^${category}$`,
+                    $options: "i"
+                }
+            });
+
+            if (!categoryExists) {
+                return res.status(404).json({
+                    message: "Category not found"
+                });
+            }
+
+            filter.category = categoryExists._id;
+        }
+
+        if (lowStock === "true") {
             filter.$expr = {
                 $lte: ["$stockQuantity", "$reorderLevel"]
             };
         }
 
-        const products = await Product.find(filter).populate(
-            "category",
-            "name"
-        );
+        const products = await Product.find(filter)
+            .populate("category", "name")
+            .sort({ createdAt: -1 });
 
         res.status(200).json(products);
     } catch (error) {
