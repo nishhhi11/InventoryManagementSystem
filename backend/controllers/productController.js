@@ -1,5 +1,6 @@
 const Product = require("../models/Product");
 const Category = require("../models/Category");
+const StockMovement = require("../models/StockMovement");
 
 const createProduct = async (req, res) => {
     try {
@@ -192,7 +193,7 @@ const updateProduct = async (req, res) => {
 
 const updateStock = async (req, res) => {
     try {
-        const { stockQuantity } = req.body;
+        const { stockQuantity, reason } = req.body;
 
         if (stockQuantity === undefined) {
             return res.status(400).json({
@@ -206,14 +207,13 @@ const updateStock = async (req, res) => {
             });
         }
 
-        const product = await Product.findByIdAndUpdate(
-            req.params.id,
-            { stockQuantity },
-            {
-                new: true,
-                runValidators: true
-            }
-        ).populate("category", "name");
+        if (!reason) {
+            return res.status(400).json({
+                message: "Stock update reason is required"
+            });
+        }
+
+        const product = await Product.findById(req.params.id);
 
         if (!product) {
             return res.status(404).json({
@@ -221,9 +221,30 @@ const updateStock = async (req, res) => {
             });
         }
 
+        const previousQuantity = product.stockQuantity;
+        const quantityChanged = stockQuantity - previousQuantity;
+
+        product.stockQuantity = stockQuantity;
+
+        await product.save();
+
+        await StockMovement.create({
+            product: product._id,
+            previousQuantity,
+            newQuantity: stockQuantity,
+            quantityChanged,
+            reason,
+            performedBy: req.user.id
+        });
+
+        const updatedProduct = await Product.findById(product._id).populate(
+            "category",
+            "name"
+        );
+
         res.status(200).json({
             message: "Stock updated successfully",
-            product
+            product: updatedProduct
         });
     } catch (error) {
         res.status(500).json({
