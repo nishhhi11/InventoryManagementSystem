@@ -1,6 +1,7 @@
 const Product = require("../models/Product");
 const Category = require("../models/Category");
 const StockMovement = require("../models/StockMovement");
+const ActivityLog = require("../models/ActivityLog");
 
 const createProduct = async (req, res) => {
     try {
@@ -260,6 +261,14 @@ const updateStock = async (req, res) => {
             quantityChanged,
             reason,
             performedBy: req.user.id
+        });
+
+        await ActivityLog.create({
+            user: req.user.id,
+            action: "Updated stock",
+            entity: "Stock",
+            entityId: product._id,
+            details: `Stock changed from ${previousQuantity} to ${stockQuantity}. Reason: ${reason}`
         });
 
         const updatedProduct = await Product.findById(product._id).populate(
