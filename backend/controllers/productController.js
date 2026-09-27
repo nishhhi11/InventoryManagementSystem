@@ -350,6 +350,33 @@ const getProductStats = async (req, res) => {
     }
 };
 
+const getReorderRecommendations = async (req, res) => {
+    try {
+        const products = await Product.find({
+            $expr: {
+                $lte: ["$stockQuantity", "$reorderLevel"]
+            }
+        }).populate("category", "name");
+
+        const recommendations = products.map((product) => ({
+            productId: product._id,
+            name: product.name,
+            sku: product.sku,
+            category: product.category,
+            currentStock: product.stockQuantity,
+            reorderLevel: product.reorderLevel,
+            recommendedQuantity: product.reorderLevel - product.stockQuantity
+        }));
+
+        res.status(200).json(recommendations);
+    } catch (error) {
+        res.status(500).json({
+            message: "Failed to fetch reorder recommendations",
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     createProduct,
     getProducts,
@@ -357,5 +384,6 @@ module.exports = {
     updateProduct,
     updateStock,
     deleteProduct,
-    getProductStats
+    getProductStats,
+    getReorderRecommendations
 };
