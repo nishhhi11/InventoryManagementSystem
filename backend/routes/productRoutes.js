@@ -6,7 +6,8 @@ const {
     getProductById,
     updateProduct,
     updateStock,
-    deleteProduct
+    deleteProduct,
+    getProductStats
 } = require("../controllers/productController");
 
 const { protect } = require("../middleware/authMiddleware");
@@ -14,6 +15,8 @@ const { protect } = require("../middleware/authMiddleware");
 const router = express.Router();
 
 router.get("/", protect, getProducts);
+
+router.get("/stats", protect, getProductStats);
 
 router.get("/:id", protect, getProductById);
 

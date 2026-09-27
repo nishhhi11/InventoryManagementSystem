@@ -309,11 +309,53 @@ const deleteProduct = async (req, res) => {
     }
 };
 
+const getProductStats = async (req, res) => {
+    try {
+        const totalProducts = await Product.countDocuments();
+
+        const stockResult = await Product.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    totalStock: { $sum: "$stockQuantity" },
+                    inventoryValue: {
+                        $sum: {
+                            $multiply: ["$price", "$stockQuantity"]
+                        }
+                    }
+                }
+            }
+        ]);
+
+        const lowStockProducts = await Product.countDocuments({
+            $expr: {
+                $lte: ["$stockQuantity", "$reorderLevel"]
+            }
+        });
+
+        const totalCategories = await Category.countDocuments();
+
+        res.status(200).json({
+            totalProducts,
+            totalStock: stockResult[0]?.totalStock || 0,
+            lowStockProducts,
+            totalCategories,
+            inventoryValue: stockResult[0]?.inventoryValue || 0
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: "Failed to fetch product statistics",
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     createProduct,
     getProducts,
     getProductById,
     updateProduct,
     updateStock,
-    deleteProduct
+    deleteProduct,
+    getProductStats
 };
