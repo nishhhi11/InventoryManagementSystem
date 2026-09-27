@@ -3,17 +3,37 @@ const Category = require("../models/Category");
 
 const createProduct = async (req, res) => {
     try {
-        const { name, description, price, stockQuantity, category } = req.body;
+        const {
+            name,
+            sku,
+            description,
+            price,
+            stockQuantity,
+            reorderLevel,
+            category
+        } = req.body;
 
-        if (!name || price === undefined || stockQuantity === undefined || !category) {
+        if (
+            !name ||
+            !sku ||
+            price === undefined ||
+            stockQuantity === undefined ||
+            !category
+        ) {
             return res.status(400).json({
-                message: "Name, price, stock quantity and category are required"
+                message: "Name, SKU, price, stock quantity and category are required"
             });
         }
 
         if (stockQuantity < 0) {
             return res.status(400).json({
                 message: "Stock quantity cannot be negative"
+            });
+        }
+
+        if (reorderLevel !== undefined && reorderLevel < 0) {
+            return res.status(400).json({
+                message: "Reorder level cannot be negative"
             });
         }
 
@@ -25,11 +45,21 @@ const createProduct = async (req, res) => {
             });
         }
 
+        const existingSKU = await Product.findOne({ sku });
+
+        if (existingSKU) {
+            return res.status(400).json({
+                message: "SKU already exists"
+            });
+        }
+
         const product = await Product.create({
             name,
+            sku,
             description,
             price,
             stockQuantity,
+            reorderLevel,
             category
         });
 
@@ -50,7 +80,9 @@ const getProducts = async (req, res) => {
         const filter = {};
 
         if (req.query.lowStock === "true") {
-            filter.stockQuantity = { $lte: 10 };
+            filter.$expr = {
+                $lte: ["$stockQuantity", "$reorderLevel"]
+            };
         }
 
         const products = await Product.find(filter).populate(
@@ -91,11 +123,25 @@ const getProductById = async (req, res) => {
 
 const updateProduct = async (req, res) => {
     try {
-        const { name, description, price, stockQuantity, category } = req.body;
+        const {
+            name,
+            sku,
+            description,
+            price,
+            stockQuantity,
+            reorderLevel,
+            category
+        } = req.body;
 
         if (stockQuantity !== undefined && stockQuantity < 0) {
             return res.status(400).json({
                 message: "Stock quantity cannot be negative"
+            });
+        }
+
+        if (reorderLevel !== undefined && reorderLevel < 0) {
+            return res.status(400).json({
+                message: "Reorder level cannot be negative"
             });
         }
 
@@ -113,9 +159,11 @@ const updateProduct = async (req, res) => {
             req.params.id,
             {
                 name,
+                sku,
                 description,
                 price,
                 stockQuantity,
+                reorderLevel,
                 category
             },
             {

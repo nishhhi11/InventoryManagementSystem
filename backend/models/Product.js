@@ -4,7 +4,15 @@ const productSchema = new mongoose.Schema(
     {
         name: {
             type: String,
-            required: true
+            required: true,
+            trim: true
+        },
+
+        sku: {
+            type: String,
+            required: true,
+            unique: true,
+            trim: true
         },
 
         description: {
@@ -22,6 +30,13 @@ const productSchema = new mongoose.Schema(
             required: true,
             min: 0,
             default: 0
+        },
+
+        reorderLevel: {
+            type: Number,
+            required: true,
+            min: 0,
+            default: 10
         },
 
         category: {
