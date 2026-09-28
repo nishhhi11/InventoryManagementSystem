@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createCategory, getCategories } from "../services/api";
+import { Keyboard, Router, Plug, PenTool, Folder, Monitor, Cpu, Headset, Mouse } from "lucide-react";
 
 function Categories({ user }) {
     const [categories, setCategories] = useState([]);

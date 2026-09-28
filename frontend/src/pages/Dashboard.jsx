@@ -270,8 +270,8 @@ function Dashboard({ user }) {
                 <div style={{ padding: '20px', background: 'var(--card-bg, #061d20)', borderRadius: '12px', border: '1px solid rgba(255, 107, 107, 0.15)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#ff6b6b' }}></div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <div style={{ color: 'var(--text-muted, #769293)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Needs restock</div>
-                        <div style={{ padding: '8px', backgroundColor: 'rgba(255, 107, 107, 0.1)', borderRadius: '8px', color: '#ff6b6b' }}>
+                        <div style={{ color: 'var(--text-muted, #769293)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600, cursor: 'help' }} title="Items below their reorder level">Needs restock</div>
+                        <div style={{ padding: '8px', backgroundColor: 'rgba(255, 107, 107, 0.1)', borderRadius: '8px', color: '#ff6b6b' }} title="Needs restock counts items < reorder level. Low stock counts items <= reorder level.">
                             <AlertTriangle size={18} />
                         </div>
                     </div>
