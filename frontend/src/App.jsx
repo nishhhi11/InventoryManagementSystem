@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { Search, LayoutDashboard, Package, RefreshCcw, Tags, History, CheckCircle, X } from "lucide-react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
@@ -16,6 +17,16 @@ function App() {
 
     const [page, setPage] = useState("dashboard");
     const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
+    const [toasts, setToasts] = useState([]);
+    const [cmdOpen, setCmdOpen] = useState(false);
+    const [cmdQuery, setCmdQuery] = useState("");
+    const cmdInputRef = useRef(null);
+
+    const showToast = (message) => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, message }]);
+        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+    };
 
     useEffect(() => {
         if (theme === "light") {
@@ -32,18 +43,40 @@ function App() {
         const openCategories = () => setPage("categories");
         const openHistory = () => setPage("history");
 
+        const handleToast = (e) => showToast(e.detail);
+        
+        const handleKeyDown = (e) => {
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                setCmdOpen(true);
+            }
+            if (e.key === 'Escape') setCmdOpen(false);
+        };
+
         window.addEventListener("open-inventory", openInventory);
         window.addEventListener("open-reorder-center", openReorder);
         window.addEventListener("open-categories", openCategories);
         window.addEventListener("open-history", openHistory);
+        window.addEventListener("show-toast", handleToast);
+        window.addEventListener("keydown", handleKeyDown);
 
         return () => {
             window.removeEventListener("open-inventory", openInventory);
             window.removeEventListener("open-reorder-center", openReorder);
             window.removeEventListener("open-categories", openCategories);
             window.removeEventListener("open-history", openHistory);
+            window.removeEventListener("show-toast", handleToast);
+            window.removeEventListener("keydown", handleKeyDown);
         };
     }, []);
+
+    useEffect(() => {
+        if (cmdOpen && cmdInputRef.current) {
+            cmdInputRef.current.focus();
+        } else {
+            setCmdQuery("");
+        }
+    }, [cmdOpen]);
 
     useEffect(() => {
         if (user) {
@@ -63,6 +96,19 @@ function App() {
     };
 
     const toggleTheme = () => setTheme(prev => prev === "dark" ? "light" : "dark");
+
+    const executeCmd = (pageId) => {
+        setPage(pageId);
+        setCmdOpen(false);
+    };
+
+    const cmdOptions = [
+        { id: 'dashboard', icon: <LayoutDashboard size={16}/>, label: "Go to Dashboard" },
+        { id: 'inventory', icon: <Package size={16}/>, label: "Manage Inventory" },
+        { id: 'reorder', icon: <RefreshCcw size={16}/>, label: "Check Reorder Center" },
+        { id: 'categories', icon: <Tags size={16}/>, label: "Edit Categories" },
+        { id: 'history', icon: <History size={16}/>, label: "View History & Logs" }
+    ].filter(o => o.label.toLowerCase().includes(cmdQuery.toLowerCase()));
 
     if (!user) {
         return <Login onLogin={handleLogin} />;
@@ -86,6 +132,42 @@ function App() {
                 {page === "categories" && <Categories user={user} />}
                 {page === "history" && <StockHistory />}
             </main>
+
+            <div className="toast-container">
+                {toasts.map(t => (
+                    <div key={t.id} className="toast">
+                        <CheckCircle size={18} color="var(--primary-light)" />
+                        <span style={{ fontSize: '14px', fontWeight: 500 }}>{t.message}</span>
+                    </div>
+                ))}
+            </div>
+
+            {cmdOpen && (
+                <div className="cmd-palette-overlay" onClick={() => setCmdOpen(false)}>
+                    <div className="cmd-palette" onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', padding: '0 20px', borderBottom: '1px solid var(--border)' }}>
+                            <Search size={20} color="var(--text-muted)" />
+                            <input 
+                                ref={cmdInputRef}
+                                className="cmd-input" 
+                                placeholder="Search pages or commands..." 
+                                value={cmdQuery}
+                                onChange={e => setCmdQuery(e.target.value)}
+                                style={{ borderBottom: 'none' }}
+                            />
+                            <button onClick={() => setCmdOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={16}/></button>
+                        </div>
+                        <div className="cmd-list">
+                            {cmdOptions.map(opt => (
+                                <div key={opt.id} className="cmd-item" onClick={() => executeCmd(opt.id)}>
+                                    {opt.icon} {opt.label}
+                                </div>
+                            ))}
+                            {cmdOptions.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>No results found</div>}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

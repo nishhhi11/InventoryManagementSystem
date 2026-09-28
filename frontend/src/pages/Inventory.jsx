@@ -187,6 +187,7 @@ function Inventory() {
             const newStock = drawerProduct.stockQuantity + drawerAdjustment;
             await updateStock(drawerProduct._id, Math.max(0, newStock), drawerReason);
             setIsDrawerOpen(false);
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: `Stock updated: ${drawerProduct.name} ${drawerProduct.stockQuantity} → ${newStock}` }));
             setDrawerProduct(null);
             await loadProducts();
         } catch (error) {
