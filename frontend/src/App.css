@@ -2,12 +2,18 @@
     --card-bg: #061d20;
     --text-color: #dffafa;
     --text-muted: #769293;
+    --surface: #061d20;
+    --surface-hover: #0a262a;
+    --border: rgba(110, 220, 210, 0.15);
 }
 
 body.light-theme {
     --card-bg: #ffffff;
     --text-color: #2b3940;
     --text-muted: #879b9b;
+    --surface: #ffffff;
+    --surface-hover: #f8fafb;
+    --border: rgba(0, 0, 0, 0.08);
 }
 
 * {
@@ -715,7 +721,7 @@ th {
 
 /* LIGHT THEME OVERRIDES */
 body.light-theme .app {
-    background: #f4f7f7;
+    background: #eef2f3;
     color: #1a2a2c;
 }
 
@@ -817,13 +823,15 @@ body.light-theme .reorder-card,
 body.light-theme .category-card,
 body.light-theme .dashboard-section,
 body.light-theme .chart-section {
-    background: linear-gradient(180deg, #ffffff 0%, rgba(250, 252, 252, 0.8) 100%);
+    background: #ffffff;
     border: 1px solid rgba(0, 0, 0, 0.08);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
-body.light-theme .stat-card:hover {
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+body.light-theme .stat-card:hover,
+body.light-theme .product-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    border-color: rgba(0, 0, 0, 0.12);
 }
 
 body.light-theme .stat-card strong {
@@ -1111,11 +1119,11 @@ body.light-theme .theme-toggle:hover {
 }
 
 .chart-section {
-    background: linear-gradient(180deg, var(--surface) 0%, rgba(20, 20, 20, 0.6) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(10px);
 }
 
@@ -1133,11 +1141,11 @@ body.light-theme .theme-toggle:hover {
 }
 
 .dashboard-section {
-    background: linear-gradient(180deg, var(--surface) 0%, rgba(20, 20, 20, 0.6) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(10px);
 }
 

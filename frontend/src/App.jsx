@@ -16,7 +16,7 @@ function App() {
     });
 
     const [page, setPage] = useState("dashboard");
-    const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
+    const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
 
     useEffect(() => {
         if (theme === "light") {

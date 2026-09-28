@@ -7,7 +7,7 @@ import {
 } from "../services/api";
 import StatCard from "../components/StatCard";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
-import { Search, RefreshCw, Package, BarChart2, IndianRupee, AlertTriangle, Users, MoreVertical, Ban } from 'lucide-react';
+import { Search, RefreshCw, Package, BarChart2, IndianRupee, AlertTriangle, Users, MoreVertical, Ban, Layers } from 'lucide-react';
 
 function Dashboard({ user }) {
     const [stats, setStats] = useState(null);
@@ -247,17 +247,35 @@ function Dashboard({ user }) {
 
             {/* COMPACT METRICS */}
             <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
-                <div style={{ padding: '20px', background: 'var(--card-bg, #061d20)', borderRadius: '12px', border: '1px solid rgba(110, 220, 210, 0.1)' }}>
-                    <div style={{ color: 'var(--text-muted, #769293)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Products</div>
-                    <div style={{ fontSize: '24px', fontWeight: 700 }}>{stats?.totalProducts ?? 0}</div>
+                <div style={{ padding: '20px', background: 'var(--card-bg, #061d20)', borderRadius: '12px', border: '1px solid rgba(110, 220, 210, 0.1)', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <div style={{ color: 'var(--text-muted, #769293)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Products</div>
+                        <div style={{ padding: '8px', backgroundColor: 'rgba(93, 224, 212, 0.1)', borderRadius: '8px', color: 'var(--primary-light, #5de0d4)' }}>
+                            <Package size={18} />
+                        </div>
+                    </div>
+                    <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-color, #dffafa)' }}>{stats?.totalProducts ?? 0}</div>
                 </div>
-                <div style={{ padding: '20px', background: 'var(--card-bg, #061d20)', borderRadius: '12px', border: '1px solid rgba(110, 220, 210, 0.1)' }}>
-                    <div style={{ color: 'var(--text-muted, #769293)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Units</div>
-                    <div style={{ fontSize: '24px', fontWeight: 700 }}>{stats?.totalStock ?? 0}</div>
+
+                <div style={{ padding: '20px', background: 'var(--card-bg, #061d20)', borderRadius: '12px', border: '1px solid rgba(110, 220, 210, 0.1)', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <div style={{ color: 'var(--text-muted, #769293)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Units</div>
+                        <div style={{ padding: '8px', backgroundColor: 'rgba(93, 224, 212, 0.1)', borderRadius: '8px', color: 'var(--primary-light, #5de0d4)' }}>
+                            <Layers size={18} />
+                        </div>
+                    </div>
+                    <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-color, #dffafa)' }}>{stats?.totalStock ?? 0}</div>
                 </div>
-                <div style={{ padding: '20px', background: 'var(--card-bg, #061d20)', borderRadius: '12px', border: '1px solid rgba(110, 220, 210, 0.1)' }}>
-                    <div style={{ color: 'var(--text-muted, #769293)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Low stock</div>
-                    <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--danger-color, #ff6b6b)' }}>{stats?.lowStockProducts ?? 0}</div>
+
+                <div style={{ padding: '20px', background: 'var(--card-bg, #061d20)', borderRadius: '12px', border: '1px solid rgba(255, 107, 107, 0.15)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#ff6b6b' }}></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <div style={{ color: 'var(--text-muted, #769293)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Low stock</div>
+                        <div style={{ padding: '8px', backgroundColor: 'rgba(255, 107, 107, 0.1)', borderRadius: '8px', color: '#ff6b6b' }}>
+                            <AlertTriangle size={18} />
+                        </div>
+                    </div>
+                    <div style={{ fontSize: '28px', fontWeight: 800, color: '#ff6b6b' }}>{stats?.lowStockProducts ?? 0}</div>
                 </div>
             </section>
 
@@ -298,44 +316,44 @@ function Dashboard({ user }) {
                             </ResponsiveContainer>
                             {/* Center percentage label */}
                             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', flexDirection: 'column' }}>
-                                <strong style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-color, #dffafa)' }}>
-                                    {products.length > 0 ? Math.round((healthyProducts / products.length) * 100) : 0}%
+                                <strong style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-color, #dffafa)', lineHeight: 1 }}>
+                                    {products.length > 0 ? Math.round((healthyProducts / products.length) * 100) : 0}<span style={{ fontSize: '18px', color: 'var(--text-muted, #769293)' }}>%</span>
                                 </strong>
-                                <span style={{ fontSize: '10px', color: 'var(--text-muted, #769293)', textTransform: 'uppercase', letterSpacing: '1px' }}>Healthy</span>
+                                <span style={{ fontSize: '10px', color: 'var(--text-muted, #769293)', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '4px', fontWeight: 600 }}>Healthy</span>
                             </div>
                         </div>
 
-                        <div className="status-list" style={{ width: '100%', marginTop: '20px', padding: '0 20px' }}>
-                            <div className="status-row">
-                                <div style={{ color: 'var(--text-color, #dffafa)' }}>
-                                    <span className="status-marker healthy-marker" style={{ backgroundColor: '#4bb9a2' }}></span>
+                        <div className="status-list" style={{ width: '100%', marginTop: '16px', padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', backgroundColor: 'rgba(75, 185, 162, 0.08)', borderRadius: '8px', border: '1px solid rgba(75, 185, 162, 0.15)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-color, #dffafa)', fontWeight: 500 }}>
+                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#4bb9a2' }}></div>
                                     Healthy
                                 </div>
-                                <strong style={{ color: 'var(--text-color, #dffafa)' }}>{healthyProducts}</strong>
+                                <strong style={{ color: 'var(--text-color, #dffafa)', fontSize: '14px' }}>{healthyProducts}</strong>
                             </div>
 
-                            <div className="status-row">
-                                <div style={{ color: 'var(--text-color, #dffafa)' }}>
-                                    <span className="status-marker warning-marker" style={{ backgroundColor: '#e8b84d' }}></span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', backgroundColor: 'rgba(232, 184, 77, 0.08)', borderRadius: '8px', border: '1px solid rgba(232, 184, 77, 0.15)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-color, #dffafa)', fontWeight: 500 }}>
+                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#e8b84d' }}></div>
                                     Low stock
                                 </div>
-                                <strong style={{ color: 'var(--text-color, #dffafa)' }}>{lowStockProducts}</strong>
+                                <strong style={{ color: 'var(--text-color, #dffafa)', fontSize: '14px' }}>{lowStockProducts}</strong>
                             </div>
 
-                            <div className="status-row">
-                                <div style={{ color: 'var(--text-color, #dffafa)' }}>
-                                    <span className="status-marker danger-marker" style={{ backgroundColor: '#df8268' }}></span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', backgroundColor: 'rgba(223, 130, 104, 0.08)', borderRadius: '8px', border: '1px solid rgba(223, 130, 104, 0.15)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-color, #dffafa)', fontWeight: 500 }}>
+                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#df8268' }}></div>
                                     Out of stock
                                 </div>
-                                <strong style={{ color: 'var(--text-color, #dffafa)' }}>{outOfStockProducts}</strong>
+                                <strong style={{ color: 'var(--text-color, #dffafa)', fontSize: '14px' }}>{outOfStockProducts}</strong>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* REORDER REQUIRED */}
-                <div className="dashboard-section" style={{ background: 'transparent', border: 'none', padding: 0, boxShadow: 'none' }}>
-                    <div className="section-heading" style={{ marginBottom: '16px', padding: 0 }}>
+                <div className="dashboard-section" style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div className="section-heading no-border">
                         <div>
                             <h2 style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted, #769293)', fontWeight: 600, margin: 0 }}>Reorder Required</h2>
                         </div>
@@ -347,6 +365,8 @@ function Dashboard({ user }) {
                             View all &rarr;
                         </button>
                     </div>
+
+                    <div style={{ padding: '0 20px 20px 20px', flex: 1 }}>
 
                     {reorderProducts.length === 0 ? (
                         <div className="clean-empty" style={{ background: 'var(--card-bg, #061d20)', borderRadius: '12px', padding: '30px' }}>
@@ -366,16 +386,43 @@ function Dashboard({ user }) {
                                         <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-color, #dffafa)' }}>{product.name}</div>
                                         <div style={{ fontSize: '12px', color: 'var(--text-muted, #769293)', marginBottom: '16px' }}>{product.sku}</div>
 
-                                        <div style={{ fontSize: '13px', marginBottom: '8px', color: 'var(--text-color, #dffafa)' }}>
-                                            <strong>{stockQty} / {reorderLvl} units</strong>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
+                                            <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-color, #dffafa)', lineHeight: 1 }}>
+                                                {stockQty} <span style={{ fontSize: '14px', color: 'var(--text-muted, #769293)', fontWeight: 600 }}>/ {reorderLvl}</span>
+                                            </div>
+                                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#ff6b6b' }}>
+                                                {shortage} short
+                                            </div>
                                         </div>
 
-                                        <div style={{ width: '100%', height: '6px', backgroundColor: 'rgba(255, 107, 107, 0.15)', borderRadius: '4px', overflow: 'hidden', marginBottom: '12px' }}>
-                                            <div style={{ width: `${progressPct}%`, height: '100%', backgroundColor: '#ff6b6b' }}></div>
+                                        <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--card-bg, #061d20)', borderRadius: '4px', overflow: 'hidden', marginBottom: '20px', border: '1px solid rgba(255, 107, 107, 0.1)' }}>
+                                            <div style={{ width: `${progressPct}%`, height: '100%', backgroundColor: progressPct > 50 ? '#e8b84d' : '#ff6b6b', transition: 'width 0.5s ease-in-out' }}></div>
                                         </div>
 
-                                        <div style={{ fontSize: '12px', color: '#ff6b6b', marginBottom: '20px' }}>
-                                            {shortage} units below reorder level
+                                        <div style={{ backgroundColor: 'var(--card-bg, #061d20)', borderRadius: '8px', padding: '16px', marginBottom: '16px', border: '1px solid rgba(255, 107, 107, 0.1)' }}>
+                                            <div style={{ fontSize: '11px', color: 'var(--text-muted, #769293)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', fontWeight: 600 }}>Stock health</div>
+                                            
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                                                <span style={{ color: 'var(--text-muted, #769293)' }}>Current stock</span>
+                                                <strong style={{ color: 'var(--text-color, #dffafa)' }}>{stockQty}</strong>
+                                            </div>
+                                            
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                                                <span style={{ color: 'var(--text-muted, #769293)' }}>Reorder level</span>
+                                                <strong style={{ color: 'var(--text-color, #dffafa)' }}>{reorderLvl}</strong>
+                                            </div>
+
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                                                <span style={{ color: 'var(--text-muted, #769293)' }}>Shortage</span>
+                                                <strong style={{ color: '#ff6b6b' }}>{shortage}</strong>
+                                            </div>
+
+                                            <div style={{ width: '100%', height: '1px', backgroundColor: 'rgba(93, 224, 212, 0.1)', margin: '12px 0' }}></div>
+
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                                                <span style={{ color: 'var(--text-muted, #769293)' }}>Suggested action</span>
+                                                <strong style={{ color: 'var(--primary-light, #5de0d4)' }}>Restock</strong>
+                                            </div>
                                         </div>
 
                                         <div style={{ textAlign: 'right' }}>
@@ -388,6 +435,7 @@ function Dashboard({ user }) {
                             })}
                         </div>
                     )}
+                    </div>
                 </div>
 
             </section>
@@ -395,25 +443,26 @@ function Dashboard({ user }) {
 
 
 
-            {/* PRODUCTS */}
+            {/* PRODUCTS & ACTIVITY ROW */}
+            <section className="dashboard-two-column" style={{ marginTop: '20px' }}>
 
-            <section className="dashboard-section products-section" style={{ background: 'transparent', border: 'none', padding: 0 }}>
-
-                <div className="section-heading" style={{ borderBottom: 'none', marginBottom: '16px', paddingBottom: 0 }}>
-                    <div>
-                        <h2 style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted, #769293)', fontWeight: 600, margin: 0 }}>Products</h2>
+                {/* PRODUCTS */}
+                <div className="dashboard-section products-section" style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div className="section-heading no-border">
+                        <div>
+                            <h2 style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted, #769293)', fontWeight: 600, margin: 0 }}>Products</h2>
+                        </div>
+                        <button
+                            className="section-link"
+                            onClick={() => window.dispatchEvent(new CustomEvent("open-inventory"))}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}
+                        >
+                            View inventory &rarr;
+                        </button>
                     </div>
-                    <button
-                        className="section-link"
-                        onClick={() => window.dispatchEvent(new CustomEvent("open-inventory"))}
-                        style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}
-                    >
-                        View inventory &rarr;
-                    </button>
-                </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {products.slice(0, 5).map((product) => {
+                    <div style={{ padding: '0 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {products.slice(0, 5).map((product) => {
                         const isOut = product.stockQuantity === 0;
                         const isLow = !isOut && product.stockQuantity <= product.reorderLevel;
                         const status = isOut ? "OUT OF STOCK" : isLow ? "LOW STOCK" : "IN STOCK";
@@ -422,19 +471,30 @@ function Dashboard({ user }) {
                         return (
                             <div
                                 key={product._id}
+                                className="product-card"
                                 style={{
-                                    backgroundColor: 'var(--card-bg, #ffffff)',
-                                    border: '1px solid rgba(93, 224, 212, 0.15)',
+                                    backgroundColor: 'rgba(93, 224, 212, 0.03)',
+                                    border: '1px solid rgba(93, 224, 212, 0.1)',
                                     borderRadius: '12px',
                                     padding: '16px 20px',
                                     display: 'flex',
                                     justifyContent: 'space-between',
                                     alignItems: 'center',
-                                    transition: 'transform 0.2s, box-shadow 0.2s',
+                                    transition: 'all 0.2s ease',
                                     cursor: 'pointer'
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+                                onMouseEnter={(e) => { 
+                                    e.currentTarget.style.transform = 'translateY(-2px)'; 
+                                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.08)';
+                                    e.currentTarget.style.backgroundColor = 'rgba(93, 224, 212, 0.08)';
+                                    e.currentTarget.style.borderColor = 'rgba(93, 224, 212, 0.25)';
+                                }}
+                                onMouseLeave={(e) => { 
+                                    e.currentTarget.style.transform = 'translateY(0)'; 
+                                    e.currentTarget.style.boxShadow = 'none'; 
+                                    e.currentTarget.style.backgroundColor = 'rgba(93, 224, 212, 0.03)';
+                                    e.currentTarget.style.borderColor = 'rgba(93, 224, 212, 0.1)';
+                                }}
                             >
                                 <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                                     <div style={{
@@ -479,35 +539,33 @@ function Dashboard({ user }) {
                             </div>
                         );
                     })}
-                </div>
-
-            </section>
-
-
-            {/* STOCK ACTIVITY */}
-
-            <section className="dashboard-section activity-section" style={{ background: 'transparent', border: 'none', padding: 0, marginTop: '20px' }}>
-
-                <div className="section-heading" style={{ borderBottom: 'none', marginBottom: '16px', paddingBottom: 0 }}>
-                    <div>
-                        <h2 style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted, #769293)', fontWeight: 600, margin: 0 }}>Recent Activity</h2>
                     </div>
-                    <button
-                        className="section-link"
-                        onClick={() => window.dispatchEvent(new CustomEvent("open-history"))}
-                        style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}
-                    >
-                        View history &rarr;
-                    </button>
                 </div>
 
-                {movements.length === 0 ? (
+                {/* STOCK ACTIVITY */}
+                <div className="dashboard-section activity-section" style={{ display: 'flex', flexDirection: 'column' }}>
+
+                    <div className="section-heading no-border">
+                        <div>
+                            <h2 style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted, #769293)', fontWeight: 600, margin: 0 }}>Recent Activity</h2>
+                        </div>
+                        <button
+                            className="section-link"
+                            onClick={() => window.dispatchEvent(new CustomEvent("open-history"))}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}
+                        >
+                            View history &rarr;
+                        </button>
+                    </div>
+
+                    <div style={{ padding: '0 20px 20px 20px', flex: 1 }}>
+                    {movements.length === 0 ? (
                     <div className="clean-empty" style={{ background: 'var(--card-bg, #061d20)', borderRadius: '12px', padding: '30px' }}>
                         No stock movements recorded yet.
                     </div>
-                ) : (
-                    <div style={{ backgroundColor: 'var(--card-bg, #ffffff)', border: '1px solid rgba(93, 224, 212, 0.15)', borderRadius: '12px', padding: '24px 24px 8px 24px' }}>
-                        {movements.slice(0, 5).map((movement, idx, arr) => {
+                    ) : (
+                        <div style={{ backgroundColor: 'rgba(93, 224, 212, 0.05)', border: '1px solid rgba(93, 224, 212, 0.15)', borderRadius: '12px', padding: '24px 24px 8px 24px' }}>
+                            {movements.slice(0, 5).map((movement, idx, arr) => {
                             const isLast = idx === arr.length - 1;
                             const isIncrease = movement.quantityChanged > 0;
                             const changeColor = isIncrease ? '#4bb9a2' : '#ff6b6b';
@@ -523,20 +581,26 @@ function Dashboard({ user }) {
                                     <div style={{ flex: 1, paddingBottom: isLast ? '16px' : '16px', borderBottom: isLast ? 'none' : '1px solid rgba(93, 224, 212, 0.15)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
                                             <strong style={{ fontSize: '14px', color: 'var(--text-color, #dffafa)' }}>{movement.product?.name || "Unknown product"}</strong>
-                                            <span style={{ fontSize: '14px', fontWeight: 700, color: changeColor }}>{changePrefix}{movement.quantityChanged}</span>
+                                            <div style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: `${changeColor}15`, color: changeColor, fontSize: '14px', fontWeight: 800 }}>
+                                                {changePrefix}{movement.quantityChanged}
+                                            </div>
                                         </div>
-                                        <div style={{ fontSize: '12px', color: 'var(--text-muted, #769293)', marginBottom: '4px' }}>
-                                            {getMovementType(movement)} · {movement.reason || "Manual Adjustment"}
-                                        </div>
-                                        <div style={{ fontSize: '11px', color: 'var(--text-muted, #668789)', opacity: 0.7 }}>
-                                            {timeStr}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ fontSize: '12px', color: 'var(--text-muted, #769293)' }}>
+                                                <span style={{ color: 'var(--text-color, #dffafa)', fontWeight: 500 }}>{getMovementType(movement)}</span> · {movement.reason || "Manual Adjustment"}
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: 'var(--text-muted, #668789)', opacity: 0.7, fontWeight: 500 }}>
+                                                {timeStr}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             );
-                        })}
+                            })}
+                        </div>
+                    )}
                     </div>
-                )}
+                </div>
             </section>
 
         </div>
