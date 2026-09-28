@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { getProducts, updateStock, getCategories, createProduct } from "../services/api";
-import { Search, Plus, Filter, Package, AlertTriangle, Layers, Edit2, Check, X } from "lucide-react";
+import { 
+    Search, Plus, Filter, Package, AlertTriangle, Layers, Check, X, 
+    Download, ChevronDown, ChevronUp, MoreHorizontal, ArrowLeft, ArrowRight, Minus 
+} from "lucide-react";
 
 function Inventory() {
     const [products, setProducts] = useState([]);
@@ -9,9 +12,6 @@ function Inventory() {
     const [filterStatus, setFilterStatus] = useState("all");
     
     const [loading, setLoading] = useState(true);
-    const [editing, setEditing] = useState(null);
-    const [stock, setStock] = useState("");
-    const [reason, setReason] = useState("Manual Adjustment");
     const [error, setError] = useState("");
 
     const [categories, setCategories] = useState([]);
@@ -20,6 +20,19 @@ function Inventory() {
     const [newProduct, setNewProduct] = useState({
         name: "", sku: "", price: "", stockQuantity: "", reorderLevel: "", category: "", description: ""
     });
+
+    // New States for requested features
+    const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+    const [selectedIds, setSelectedIds] = useState([]);
+
+    // Drawer state
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [drawerProduct, setDrawerProduct] = useState(null);
+    const [drawerAdjustment, setDrawerAdjustment] = useState(0);
+    const [drawerReason, setDrawerReason] = useState("Manual Adjustment");
+    const [drawerSaving, setDrawerSaving] = useState(false);
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -54,17 +67,6 @@ function Inventory() {
         return () => clearTimeout(timer);
     }, [search]);
 
-    const saveStock = async (product) => {
-        try {
-            await updateStock(product._id, Number(stock), reason);
-            setEditing(null);
-            setStock("");
-            await loadProducts();
-        } catch (error) {
-            setError(error.message);
-        }
-    };
-
     const handleAddProduct = async (e) => {
         e.preventDefault();
         try {
@@ -89,83 +91,164 @@ function Inventory() {
         }
     };
 
-    const filteredProducts = products.filter(p => {
-        const matchCategory = filterCategory === "all" ? true : p.category?._id === filterCategory;
-        
-        let matchStatus = true;
-        const isOut = p.stockQuantity === 0;
-        const isLow = !isOut && p.stockQuantity <= p.reorderLevel;
-        if (filterStatus === "in_stock") matchStatus = !isOut && !isLow;
-        else if (filterStatus === "low_stock") matchStatus = isLow;
-        else if (filterStatus === "out_of_stock") matchStatus = isOut;
+    // Sort & Filter
+    const filteredAndSortedProducts = useMemo(() => {
+        let filtered = products.filter(p => {
+            const matchCategory = filterCategory === "all" ? true : p.category?._id === filterCategory;
+            let matchStatus = true;
+            const isOut = p.stockQuantity === 0;
+            const isLow = !isOut && p.stockQuantity <= p.reorderLevel;
+            if (filterStatus === "in_stock") matchStatus = !isOut && !isLow;
+            else if (filterStatus === "low_stock") matchStatus = isLow;
+            else if (filterStatus === "out_of_stock") matchStatus = isOut;
+            return matchCategory && matchStatus;
+        });
 
-        return matchCategory && matchStatus;
-    });
+        filtered.sort((a, b) => {
+            let aValue = a[sortConfig.key];
+            let bValue = b[sortConfig.key];
+            
+            if (sortConfig.key === 'category') {
+                aValue = a.category?.name || "";
+                bValue = b.category?.name || "";
+            }
 
-    const totalFiltered = filteredProducts.length;
-    const totalUnits = filteredProducts.reduce((sum, p) => sum + p.stockQuantity, 0);
-    const needsRestockCount = filteredProducts.filter(p => p.stockQuantity > 0 && p.stockQuantity < p.reorderLevel).length;
+            if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return filtered;
+    }, [products, filterCategory, filterStatus, sortConfig]);
+
+    // Pagination
+    const totalPages = Math.ceil(filteredAndSortedProducts.length / itemsPerPage);
+    const paginatedProducts = filteredAndSortedProducts.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const handleSort = (key) => {
+        setSortConfig(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+        }));
+    };
+
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            setSelectedIds(paginatedProducts.map(p => p._id));
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const toggleSelect = (id) => {
+        setSelectedIds(prev => 
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const exportCSV = () => {
+        const headers = ["Product Name", "SKU", "Category", "Price", "Stock", "Reorder Level", "Status"];
+        const rows = filteredAndSortedProducts.map(p => {
+            const status = p.stockQuantity === 0 ? "Out of Stock" : p.stockQuantity <= p.reorderLevel ? "Low Stock" : "In Stock";
+            return [
+                `"${p.name}"`, 
+                `"${p.sku}"`, 
+                `"${p.category?.name || ""}"`, 
+                p.price, 
+                p.stockQuantity, 
+                p.reorderLevel,
+                `"${status}"`
+            ].join(",");
+        });
+        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `inventory_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const openDrawer = (product) => {
+        setDrawerProduct(product);
+        setDrawerAdjustment(0);
+        setDrawerReason("Manual Adjustment");
+        setIsDrawerOpen(true);
+    };
+
+    const saveDrawerUpdate = async () => {
+        if (!drawerProduct || drawerAdjustment === 0) return;
+        try {
+            setDrawerSaving(true);
+            const newStock = drawerProduct.stockQuantity + drawerAdjustment;
+            await updateStock(drawerProduct._id, Math.max(0, newStock), drawerReason);
+            setIsDrawerOpen(false);
+            setDrawerProduct(null);
+            await loadProducts();
+        } catch (error) {
+            setError(error.message);
+        } finally {
+            setDrawerSaving(false);
+        }
+    };
+
+    const totalFiltered = filteredAndSortedProducts.length;
+    const totalUnits = filteredAndSortedProducts.reduce((sum, p) => sum + p.stockQuantity, 0);
+    const needsRestockCount = filteredAndSortedProducts.filter(p => p.stockQuantity > 0 && p.stockQuantity < p.reorderLevel).length;
 
     return (
-        <div className="page" style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '40px' }}>
+        <div className="page" style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '40px', position: 'relative' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
                 <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '0 0 4px 0', color: 'var(--text-color, #dffafa)' }}>Products</h1>
-                    <p style={{ margin: 0, color: 'var(--text-muted, #769293)', fontSize: '14px' }}>Manage your inventory and stock levels</p>
+                    <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '0 0 4px 0', color: 'var(--text-color, #dffafa)' }}>Inventory</h1>
+                    <p style={{ margin: 0, color: 'var(--text-muted, #769293)', fontSize: '14px' }}>Manage and monitor your products</p>
                 </div>
-                <button 
-                    onClick={() => setShowAddForm(!showAddForm)}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: '8px',
-                        backgroundColor: showAddForm ? 'var(--card-bg, #061d20)' : 'var(--primary-light, #5de0d4)',
-                        color: showAddForm ? 'var(--text-color, #dffafa)' : '#000000',
-                        border: showAddForm ? '1px solid rgba(93, 224, 212, 0.2)' : 'none',
-                        padding: '10px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: 600,
-                        cursor: 'pointer', transition: 'all 0.2s'
-                    }}
-                >
-                    {showAddForm ? <X size={16} /> : <Plus size={16} />}
-                    {showAddForm ? "Cancel" : "Add Product"}
-                </button>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    <button 
+                        onClick={exportCSV}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            backgroundColor: 'rgba(255,255,255,0.05)', color: 'var(--text-color, #dffafa)',
+                            border: '1px solid rgba(255,255,255,0.1)', padding: '10px 16px', 
+                            borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer'
+                        }}
+                    >
+                        <Download size={16} /> Export CSV
+                    </button>
+                    <button 
+                        onClick={() => setShowAddForm(!showAddForm)}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            backgroundColor: showAddForm ? 'var(--card-bg, #061d20)' : 'var(--primary-light, #5de0d4)',
+                            color: showAddForm ? 'var(--text-color, #dffafa)' : '#000000',
+                            border: showAddForm ? '1px solid rgba(93, 224, 212, 0.2)' : 'none',
+                            padding: '10px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: 600,
+                            cursor: 'pointer', transition: 'all 0.2s'
+                        }}
+                    >
+                        {showAddForm ? <X size={16} /> : <Plus size={16} />}
+                        {showAddForm ? "Cancel" : "Add Product"}
+                    </button>
+                </div>
             </div>
 
             {error && <div style={{ backgroundColor: 'rgba(255, 107, 107, 0.1)', border: '1px solid rgba(255, 107, 107, 0.2)', color: '#ff6b6b', padding: '12px 16px', borderRadius: '8px', marginBottom: '24px', fontSize: '14px' }}>{error}</div>}
 
             {showAddForm && (
                 <section className="dashboard-section" style={{ marginBottom: '24px', backgroundColor: 'var(--card-bg, #061d20)', padding: '24px', borderRadius: '12px', border: '1px solid rgba(93, 224, 212, 0.15)' }}>
+                    {/* (Add form content remains similar) */}
                     <h3 style={{ marginBottom: '20px', color: 'var(--text-color, #dffafa)', fontSize: '16px', fontWeight: 600 }}>Add New Product</h3>
                     <form onSubmit={handleAddProduct} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #769293)' }}>Product Name *</label>
-                            <input required style={{ width: '100%', padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--text-color, #dffafa)' }} value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #769293)' }}>SKU *</label>
-                            <input required style={{ width: '100%', padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--text-color, #dffafa)' }} value={newProduct.sku} onChange={e => setNewProduct({...newProduct, sku: e.target.value})} />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #769293)' }}>Price (₹) *</label>
-                            <input required type="number" min="0" step="0.01" style={{ width: '100%', padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--text-color, #dffafa)' }} value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #769293)' }}>Category *</label>
-                            <select required style={{ width: '100%', padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--text-color, #dffafa)' }} value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})}>
-                                <option value="" disabled>Select category</option>
-                                {categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #769293)' }}>Initial Stock Quantity *</label>
-                            <input required type="number" min="0" style={{ width: '100%', padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--text-color, #dffafa)' }} value={newProduct.stockQuantity} onChange={e => setNewProduct({...newProduct, stockQuantity: e.target.value})} />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #769293)' }}>Reorder Level *</label>
-                            <input required type="number" min="0" style={{ width: '100%', padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--text-color, #dffafa)' }} value={newProduct.reorderLevel} onChange={e => setNewProduct({...newProduct, reorderLevel: e.target.value})} />
-                        </div>
-                        <div style={{ gridColumn: '1 / -1' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #769293)' }}>Description</label>
-                            <textarea style={{ width: '100%', minHeight: '80px', padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--text-color, #dffafa)' }} value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})}></textarea>
-                        </div>
+                        <div><label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #769293)' }}>Product Name *</label><input required style={{ width: '100%', padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--text-color)' }} value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} /></div>
+                        <div><label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #769293)' }}>SKU *</label><input required style={{ width: '100%', padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--text-color)' }} value={newProduct.sku} onChange={e => setNewProduct({...newProduct, sku: e.target.value})} /></div>
+                        <div><label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #769293)' }}>Price (₹) *</label><input required type="number" min="0" step="0.01" style={{ width: '100%', padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--text-color)' }} value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} /></div>
+                        <div><label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #769293)' }}>Category *</label><select required style={{ width: '100%', padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--text-color)' }} value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})}><option value="" disabled>Select category</option>{categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}</select></div>
+                        <div><label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #769293)' }}>Initial Stock *</label><input required type="number" min="0" style={{ width: '100%', padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--text-color)' }} value={newProduct.stockQuantity} onChange={e => setNewProduct({...newProduct, stockQuantity: e.target.value})} /></div>
+                        <div><label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #769293)' }}>Reorder Level *</label><input required type="number" min="0" style={{ width: '100%', padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--text-color)' }} value={newProduct.reorderLevel} onChange={e => setNewProduct({...newProduct, reorderLevel: e.target.value})} /></div>
                         <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
                             <button type="submit" style={{ backgroundColor: 'var(--primary-light, #5de0d4)', color: '#000', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }} disabled={adding}>
                                 {adding ? "Adding..." : "Add Product"}
@@ -175,67 +258,51 @@ function Inventory() {
                 </section>
             )}
 
-            {/* SEARCH & FILTERS */}
-            <div className="dashboard-section" style={{ display: 'flex', gap: '16px', padding: '16px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-                <div style={{ position: 'relative', flex: '1', minWidth: '250px' }}>
-                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted, #769293)' }} />
-                    <input
-                        placeholder="Search products or SKU..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        style={{ width: '100%', padding: '10px 12px 10px 36px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(93, 224, 212, 0.2)', borderRadius: '8px', color: 'var(--text-color, #dffafa)', fontSize: '14px' }}
-                    />
+            {/* SEARCH & FILTER CHIPS */}
+            <div className="dashboard-section" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <div style={{ position: 'relative', flex: '1' }}>
+                        <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted, #769293)' }} />
+                        <input
+                            placeholder="Search products or SKU..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            style={{ width: '100%', padding: '12px 12px 12px 36px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'var(--text-color, #dffafa)', fontSize: '14px', outline: 'none' }}
+                        />
+                    </div>
                 </div>
                 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Filter size={16} style={{ color: 'var(--text-muted, #769293)' }} />
-                    <select 
-                        value={filterCategory} 
-                        onChange={(e) => setFilterCategory(e.target.value)}
-                        style={{ padding: '10px 32px 10px 12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(93, 224, 212, 0.2)', borderRadius: '8px', color: 'var(--text-color, #dffafa)', fontSize: '14px', appearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23769293\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-                    >
-                        <option value="all">All Categories</option>
-                        {categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}
-                    </select>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <select 
-                        value={filterStatus} 
-                        onChange={(e) => setFilterStatus(e.target.value)}
-                        style={{ padding: '10px 32px 10px 12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(93, 224, 212, 0.2)', borderRadius: '8px', color: 'var(--text-color, #dffafa)', fontSize: '14px', appearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23769293\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-                    >
-                        <option value="all">All Statuses</option>
-                        <option value="in_stock">In Stock</option>
-                        <option value="low_stock">Low Stock</option>
-                        <option value="out_of_stock">Out of Stock</option>
-                    </select>
-                </div>
-            </div>
-
-            {/* INVENTORY SUMMARY */}
-            <div className="dashboard-section" style={{ display: 'flex', gap: '32px', padding: '16px 24px', marginBottom: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ padding: '8px', backgroundColor: 'rgba(93, 224, 212, 0.1)', borderRadius: '8px', color: 'var(--primary-light, #5de0d4)' }}><Package size={18} /></div>
-                    <div>
-                        <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-color, #dffafa)' }}>{totalFiltered}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted, #769293)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Products</div>
+                {/* Filter Chips */}
+                <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Status:</span>
+                        {['all', 'in_stock', 'low_stock', 'out_of_stock'].map(status => (
+                            <button 
+                                key={status}
+                                onClick={() => { setFilterStatus(status); setCurrentPage(1); }}
+                                style={{ 
+                                    padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: 'none',
+                                    backgroundColor: filterStatus === status ? 'var(--primary-light, #5de0d4)' : 'rgba(255,255,255,0.05)',
+                                    color: filterStatus === status ? '#000' : 'var(--text-muted)', transition: 'all 0.2s'
+                                }}
+                            >
+                                {status.replace('_', ' ').toUpperCase()}
+                            </button>
+                        ))}
                     </div>
-                </div>
-                <div style={{ width: '1px', backgroundColor: 'rgba(255,255,255,0.1)' }}></div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ padding: '8px', backgroundColor: 'rgba(93, 224, 212, 0.1)', borderRadius: '8px', color: 'var(--primary-light, #5de0d4)' }}><Layers size={18} /></div>
-                    <div>
-                        <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-color, #dffafa)' }}>{totalUnits}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted, #769293)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Units</div>
-                    </div>
-                </div>
-                <div style={{ width: '1px', backgroundColor: 'rgba(255,255,255,0.1)' }}></div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ padding: '8px', backgroundColor: 'rgba(255, 107, 107, 0.1)', borderRadius: '8px', color: '#ff6b6b' }}><AlertTriangle size={18} /></div>
-                    <div>
-                        <div style={{ fontSize: '18px', fontWeight: 700, color: '#ff6b6b' }}>{needsRestockCount}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted, #769293)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Needs Restock</div>
+                    <div style={{ width: '1px', height: '20px', backgroundColor: 'rgba(255,255,255,0.1)' }}></div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Category:</span>
+                        <button onClick={() => { setFilterCategory('all'); setCurrentPage(1); }} style={{ padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: 'none', backgroundColor: filterCategory === 'all' ? 'var(--primary-light)' : 'rgba(255,255,255,0.05)', color: filterCategory === 'all' ? '#000' : 'var(--text-muted)' }}>All</button>
+                        {categories.map(cat => (
+                            <button 
+                                key={cat._id}
+                                onClick={() => { setFilterCategory(cat._id); setCurrentPage(1); }}
+                                style={{ padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: 'none', backgroundColor: filterCategory === cat._id ? 'var(--primary-light)' : 'rgba(255,255,255,0.05)', color: filterCategory === cat._id ? '#000' : 'var(--text-muted)' }}
+                            >
+                                {cat.name}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -244,104 +311,91 @@ function Inventory() {
             <section className="dashboard-section" style={{ padding: 0, overflow: 'hidden' }}>
                 {loading ? (
                     <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted, #769293)' }}>Loading products...</div>
-                ) : filteredProducts.length === 0 ? (
+                ) : filteredAndSortedProducts.length === 0 ? (
                     <div style={{ padding: '60px 20px', textAlign: 'center' }}>
                         <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'var(--text-muted)' }}>
                             <Package size={24} />
                         </div>
                         <h3 style={{ fontSize: '16px', color: 'var(--text-color, #dffafa)', marginBottom: '8px' }}>No products found</h3>
-                        <p style={{ color: 'var(--text-muted, #769293)', fontSize: '14px' }}>Try adjusting your search or filters.</p>
                     </div>
                 ) : (
                     <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
                                 <tr style={{ backgroundColor: 'rgba(0,0,0,0.1)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <th style={{ padding: '16px 24px', color: 'var(--text-muted, #769293)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Product</th>
-                                    <th style={{ padding: '16px 16px', color: 'var(--text-muted, #769293)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>SKU</th>
-                                    <th style={{ padding: '16px 16px', color: 'var(--text-muted, #769293)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Category</th>
-                                    <th style={{ padding: '16px 16px', color: 'var(--text-muted, #769293)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Price</th>
-                                    <th style={{ padding: '16px 16px', color: 'var(--text-muted, #769293)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Stock</th>
-                                    <th style={{ padding: '16px 24px', color: 'var(--text-muted, #769293)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600, textAlign: 'right' }}>Action</th>
+                                    <th style={{ padding: '16px 16px', width: '40px' }}>
+                                        <input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === paginatedProducts.length && paginatedProducts.length > 0} style={{ cursor: 'pointer' }} />
+                                    </th>
+                                    {[
+                                        { key: 'name', label: 'Product' },
+                                        { key: 'sku', label: 'SKU' },
+                                        { key: 'category', label: 'Category' },
+                                        { key: 'price', label: 'Price' },
+                                        { key: 'stockQuantity', label: 'Stock' }
+                                    ].map(col => (
+                                        <th 
+                                            key={col.key} 
+                                            onClick={() => handleSort(col.key)}
+                                            style={{ padding: '16px 16px', color: 'var(--text-muted, #769293)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}
+                                        >
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                {col.label}
+                                                {sortConfig.key === col.key && (
+                                                    sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
+                                                )}
+                                            </div>
+                                        </th>
+                                    ))}
+                                    <th style={{ padding: '16px 24px', textAlign: 'right' }}></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredProducts.map((product) => {
+                                {paginatedProducts.map((product) => {
                                     const isOut = product.stockQuantity === 0;
                                     const isLow = !isOut && product.stockQuantity <= product.reorderLevel;
-                                    const statusLabel = isOut ? "OUT OF STOCK" : isLow ? "LOW STOCK" : "IN STOCK";
+                                    const statusLabel = isOut ? "Out of Stock" : isLow ? "Low Stock" : "In Stock";
                                     const statusColor = isOut ? "#df8268" : isLow ? "#e8b84d" : "#4bb9a2";
-                                    const isEditing = editing === product._id;
+                                    const stockProgress = product.reorderLevel > 0 ? Math.min(100, (product.stockQuantity / product.reorderLevel) * 100) : 100;
 
                                     return (
-                                        <tr key={product._id} className="inventory-row" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                                            <td style={{ padding: '16px 24px' }}>
+                                        <tr key={product._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', backgroundColor: selectedIds.includes(product._id) ? 'rgba(93, 224, 212, 0.05)' : 'transparent', transition: 'background-color 0.2s' }}>
+                                            <td style={{ padding: '16px 16px' }}>
+                                                <input type="checkbox" checked={selectedIds.includes(product._id)} onChange={() => toggleSelect(product._id)} style={{ cursor: 'pointer' }} />
+                                            </td>
+                                            <td style={{ padding: '16px 16px' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: statusColor }}></div>
+                                                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: `${statusColor}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 700, color: statusColor }}>
+                                                        {product.name.charAt(0)}
+                                                    </div>
                                                     <div>
-                                                        <div style={{ fontWeight: 600, color: 'var(--text-color, #dffafa)', fontSize: '14px' }}>{product.name}</div>
-                                                        <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', color: statusColor, marginTop: '4px' }}>{statusLabel}</div>
+                                                        <div style={{ fontWeight: 600, color: 'var(--text-color, #dffafa)', fontSize: '14px', marginBottom: '4px' }}>{product.name}</div>
+                                                        <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', color: statusColor, padding: '2px 6px', backgroundColor: `${statusColor}15`, borderRadius: '4px' }}>
+                                                            {statusLabel}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td style={{ padding: '16px 16px', color: 'var(--text-muted, #769293)', fontSize: '13px', fontFamily: 'monospace' }}>
-                                                {product.sku || "—"}
-                                            </td>
-                                            <td style={{ padding: '16px 16px', color: 'var(--text-muted, #769293)', fontSize: '13px' }}>
-                                                {product.category?.name || "—"}
-                                            </td>
-                                            <td style={{ padding: '16px 16px', color: 'var(--text-color, #dffafa)', fontSize: '14px', fontWeight: 500 }}>
-                                                ₹{Number(product.price).toLocaleString("en-IN")}
-                                            </td>
-                                            <td style={{ padding: '16px 16px' }}>
-                                                {isEditing ? (
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        value={stock}
-                                                        onChange={(e) => setStock(e.target.value)}
-                                                        style={{ width: '70px', padding: '6px 8px', backgroundColor: 'var(--card-bg, #061d20)', border: '1px solid var(--primary-light, #5de0d4)', borderRadius: '6px', color: 'var(--text-color, #dffafa)', fontSize: '14px', outline: 'none' }}
-                                                        autoFocus
-                                                    />
-                                                ) : (
-                                                    <strong style={{ color: 'var(--text-color, #dffafa)', fontSize: '16px' }}>{product.stockQuantity}</strong>
-                                                )}
+                                            <td style={{ padding: '16px 16px', color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'monospace' }}>{product.sku || "—"}</td>
+                                            <td style={{ padding: '16px 16px', color: 'var(--text-muted)', fontSize: '13px' }}>{product.category?.name || "—"}</td>
+                                            <td style={{ padding: '16px 16px', color: 'var(--text-color)', fontSize: '14px', fontWeight: 500 }}>₹{Number(product.price).toLocaleString("en-IN")}</td>
+                                            <td style={{ padding: '16px 16px', width: '150px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                                                    <strong style={{ color: 'var(--text-color)' }}>{product.stockQuantity}</strong>
+                                                    <span style={{ color: 'var(--text-muted)' }}>/ {product.reorderLevel}</span>
+                                                </div>
+                                                <div style={{ width: '100%', height: '4px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                                                    <div style={{ width: `${stockProgress}%`, height: '100%', backgroundColor: statusColor }}></div>
+                                                </div>
                                             </td>
                                             <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                                                {isEditing ? (
-                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                                                        <select
-                                                            value={reason}
-                                                            onChange={(e) => setReason(e.target.value)}
-                                                            style={{ padding: '6px 24px 6px 10px', backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--text-color, #dffafa)', fontSize: '12px', appearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'10\' height=\'10\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23769293\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
-                                                        >
-                                                            <option>Restock</option>
-                                                            <option>Sale</option>
-                                                            <option>Damaged</option>
-                                                            <option>Returned</option>
-                                                            <option>Manual Adjustment</option>
-                                                        </select>
-                                                        <button
-                                                            onClick={() => saveStock(product)}
-                                                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', backgroundColor: 'var(--primary-light, #5de0d4)', color: '#000', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
-                                                        >
-                                                            <Check size={14} /> Save
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setEditing(null)}
-                                                            style={{ padding: '6px', backgroundColor: 'transparent', color: 'var(--text-muted, #769293)', border: 'none', cursor: 'pointer' }}
-                                                        >
-                                                            <X size={16} />
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => { setEditing(product._id); setStock(product.stockQuantity); }}
-                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: 'rgba(93, 224, 212, 0.1)', color: 'var(--primary-light, #5de0d4)', border: '1px solid rgba(93, 224, 212, 0.2)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
-                                                    >
-                                                        <Edit2 size={12} /> Update
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                                                    <button onClick={() => openDrawer(product)} style={{ padding: '6px 12px', backgroundColor: 'rgba(93, 224, 212, 0.1)', color: 'var(--primary-light)', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                                        Update Stock
                                                     </button>
-                                                )}
+                                                    <button style={{ padding: '6px', backgroundColor: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer' }}>
+                                                        <MoreHorizontal size={16} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -350,7 +404,86 @@ function Inventory() {
                         </table>
                     </div>
                 )}
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedProducts.length)} of {filteredAndSortedProducts.length}
+                        </span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ padding: '6px', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.05)', border: 'none', color: currentPage === 1 ? 'rgba(255,255,255,0.2)' : 'var(--text-color)', cursor: currentPage === 1 ? 'default' : 'pointer' }}><ArrowLeft size={16} /></button>
+                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ padding: '6px', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.05)', border: 'none', color: currentPage === totalPages ? 'rgba(255,255,255,0.2)' : 'var(--text-color)', cursor: currentPage === totalPages ? 'default' : 'pointer' }}><ArrowRight size={16} /></button>
+                        </div>
+                    </div>
+                )}
             </section>
+
+            {/* Slide-over Drawer for Updates */}
+            {isDrawerOpen && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }}>
+                    <div style={{ width: '400px', backgroundColor: 'var(--card-bg, #061d20)', height: '100%', boxShadow: '-4px 0 24px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', borderLeft: '1px solid rgba(93, 224, 212, 0.2)', animation: 'slideIn 0.3s forwards' }}>
+                        <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-color)', margin: 0 }}>Update Stock</h2>
+                            <button onClick={() => setIsDrawerOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20} /></button>
+                        </div>
+                        
+                        <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
+                            <div style={{ marginBottom: '24px' }}>
+                                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '4px' }}>Product</div>
+                                <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-color)' }}>{drawerProduct?.name}</div>
+                            </div>
+
+                            <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                    <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Current Stock</span>
+                                    <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-color)' }}>{drawerProduct?.stockQuantity}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                    <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Adjustment</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <button onClick={() => setDrawerAdjustment(a => a - 1)} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'var(--text-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Minus size={14} /></button>
+                                        <span style={{ fontSize: '18px', fontWeight: 700, color: drawerAdjustment > 0 ? '#4bb9a2' : drawerAdjustment < 0 ? '#ff6b6b' : 'var(--text-color)', width: '40px', textAlign: 'center' }}>
+                                            {drawerAdjustment > 0 ? `+${drawerAdjustment}` : drawerAdjustment}
+                                        </span>
+                                        <button onClick={() => setDrawerAdjustment(a => a + 1)} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'var(--text-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Plus size={14} /></button>
+                                    </div>
+                                </div>
+                                <div style={{ width: '100%', height: '1px', backgroundColor: 'rgba(255,255,255,0.05)', marginBottom: '16px' }}></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>New Stock</span>
+                                    <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--primary-light)' }}>{Math.max(0, (drawerProduct?.stockQuantity || 0) + drawerAdjustment)}</span>
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>Reason for Update</label>
+                                <select 
+                                    value={drawerReason} 
+                                    onChange={(e) => setDrawerReason(e.target.value)}
+                                    style={{ width: '100%', padding: '12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'var(--text-color)', fontSize: '14px', outline: 'none' }}
+                                >
+                                    <option>Restock</option>
+                                    <option>Sale</option>
+                                    <option>Damaged</option>
+                                    <option>Returned</option>
+                                    <option>Manual Adjustment</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style={{ padding: '24px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '12px' }}>
+                            <button onClick={() => setIsDrawerOpen(false)} style={{ flex: 1, padding: '12px', backgroundColor: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'var(--text-color)', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                            <button onClick={saveDrawerUpdate} disabled={drawerSaving || drawerAdjustment === 0} style={{ flex: 1, padding: '12px', backgroundColor: 'var(--primary-light)', border: 'none', borderRadius: '8px', color: '#000', fontWeight: 600, cursor: drawerAdjustment === 0 ? 'not-allowed' : 'pointer', opacity: drawerAdjustment === 0 ? 0.5 : 1 }}>
+                                {drawerSaving ? "Saving..." : "Confirm Update"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            <style dangerouslySetInnerHTML={{__html: `
+                @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+            `}} />
         </div>
     );
 }
