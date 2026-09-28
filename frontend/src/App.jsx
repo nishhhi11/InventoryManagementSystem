@@ -111,7 +111,7 @@ function App() {
     ].filter(o => o.label.toLowerCase().includes(cmdQuery.toLowerCase()));
 
     if (!user) {
-        return <Login onLogin={handleLogin} />;
+        return <Login onLogin={handleLogin} theme={theme} toggleTheme={toggleTheme} />;
     }
 
     return (

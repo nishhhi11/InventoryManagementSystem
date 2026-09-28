@@ -526,9 +526,12 @@ th {
 }
 
 .login-page {
-    min-height: 100vh;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
     background: #041719;
     display: flex;
+    position: relative;
 }
 
 .login-brand-panel {
@@ -720,14 +723,7 @@ body.light-theme .login-form-panel {
     }
 }
 
-.login-form-panel {
-    width: 430px;
-    padding: 45px;
-    background: rgba(8, 30, 32, 0.92);
-    border: 1px solid rgba(80, 210, 200, 0.16);
-    border-radius: 26px;
-    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
-}
+
 
 .login-form-panel .brand-large {
     margin-bottom: 28px;
@@ -771,27 +767,45 @@ body.light-theme .login-form-panel {
 
 .role-segment-group {
     display: flex;
-    gap: 8px;
+    position: relative;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 4px;
     margin-bottom: 24px;
 }
 
 .role-segment {
     flex: 1;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(100, 210, 200, 0.15);
-    border-radius: 10px;
-    color: #769293;
+    padding: 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted, #769293);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: color 0.3s;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .role-segment.active {
+    color: #5de0d4;
+}
+
+.role-slider {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    width: calc(50% - 4px);
     background: rgba(93, 224, 212, 0.1);
-    border-color: #52d8ce;
-    color: #52d8ce;
+    border: 1px solid rgba(100, 210, 200, 0.15);
+    border-radius: 8px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
 }
 
 .enter-button {
@@ -841,8 +855,7 @@ body.light-theme .login-page {
 
 body.light-theme .login-form-panel {
     background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+    border-left: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 body.light-theme .login-form-panel h1 {
@@ -883,16 +896,21 @@ body.light-theme .login-form-panel input[type="password"] {
     color: #1a2a2c;
 }
 
+body.light-theme .role-segment-group {
+    background: rgba(0, 0, 0, 0.05);
+}
+
 body.light-theme .role-segment {
-    background: #f9fbfb;
-    border: 1px solid rgba(0, 0, 0, 0.1);
     color: #5c7476;
 }
 
 body.light-theme .role-segment.active {
-    background: rgba(14, 140, 129, 0.1);
-    border-color: #0e8c81;
     color: #0e8c81;
+}
+
+body.light-theme .role-slider {
+    background: rgba(14, 140, 129, 0.1);
+    border: 1px solid #0e8c81;
 }
 
 body.light-theme .user-card {
@@ -2155,8 +2173,8 @@ body.light-theme .input-icon-right {
 }
 
 .enter-button {
-    background: linear-gradient(135deg, #5de0d4 0%, #3bbdb0 100%) !important;
-    box-shadow: 0 4px 14px rgba(93, 224, 212, 0.2);
+    background: linear-gradient(135deg, #4ac4b9 0%, #2f9d92 100%) !important;
+    box-shadow: 0 4px 14px rgba(74, 196, 185, 0.2);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -2186,4 +2204,231 @@ body.light-theme .enter-button {
 }
 @keyframes spin {
     100% { transform: rotate(360deg); }
+}
+
+.animate-stagger {
+    opacity: 0;
+    animation: fadeInSlideUp 0.4s ease-out forwards;
+}
+
+.delay-1 { animation-delay: 60ms; }
+.delay-2 { animation-delay: 120ms; }
+.delay-3 { animation-delay: 180ms; }
+.delay-4 { animation-delay: 240ms; }
+.delay-5 { animation-delay: 300ms; }
+
+.login-form-panel {
+    animation: fadeInSlideUp 0.5s ease-out;
+}
+
+.login-success-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #041719;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #5de0d4;
+    font-size: 24px;
+    font-weight: 700;
+    animation: fadeIn 0.3s ease-out;
+}
+
+body.light-theme .login-success-overlay {
+    background: #eef2f3;
+    color: #0e8c81;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Login balance tweaks */
+.login-brand-panel {
+    position: relative;
+    overflow: hidden;
+}
+.login-brand-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+}
+body.light-theme .login-brand-panel::before {
+    background-image: radial-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+}
+.login-brand-panel > * {
+    position: relative;
+    z-index: 1;
+}
+
+.floating-preview {
+    width: 100%;
+    max-width: 380px;
+    height: 420px;
+    max-height: 100%;
+    background: rgba(6, 28, 30, 0.6) !important;
+    border: 1px solid rgba(93, 224, 212, 0.15) !important;
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    box-shadow: -20px 20px 40px rgba(0, 0, 0, 0.4), 0 0 40px rgba(93, 224, 212, 0.1) !important;
+    transform: rotateY(-8deg) rotateX(5deg);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: float-preview 6s ease-in-out infinite;
+}
+@keyframes float-preview {
+    0%, 100% { transform: rotateY(-8deg) rotateX(5deg) translateY(0); }
+    50% { transform: rotateY(-8deg) rotateX(5deg) translateY(-25px); }
+}
+.preview-header {
+    height: 24px;
+    width: 100%;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05) !important;
+    margin-bottom: 8px;
+}
+.preview-chart {
+    flex-shrink: 0;
+    height: 120px;
+    width: 120px;
+    border-radius: 50%;
+    border: 12px solid rgba(93, 224, 212, 0.8);
+    border-top-color: rgba(93, 224, 212, 0.2);
+    border-right-color: rgba(245, 158, 11, 0.8);
+    margin: 0 auto;
+}
+.preview-card {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.preview-card-icon {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    background: rgba(93, 224, 212, 0.2);
+    flex-shrink: 0;
+}
+.preview-card-lines {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.preview-card-line {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-radius: 4px;
+}
+
+.login-feature {
+    transition: all 0.2s ease;
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 4px;
+}
+.login-feature:hover {
+    background: rgba(93, 224, 212, 0.05);
+    transform: translateX(4px);
+}
+.text-gradient {
+    background: linear-gradient(135deg, #5de0d4 0%, #3bbdb0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Login Form Polish */
+.demo-hint {
+    background: rgba(93, 224, 212, 0.1);
+    border: 1px solid rgba(93, 224, 212, 0.2);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--primary-light, #5de0d4);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+}
+
+body.light-theme .demo-hint {
+    background: rgba(14, 140, 129, 0.12);
+    border: 1px solid rgba(14, 140, 129, 0.3);
+    color: #0c756c;
+}
+
+.custom-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1px solid rgba(93, 224, 212, 0.4);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.custom-checkbox:checked {
+    background: #5de0d4;
+    border-color: #5de0d4;
+}
+
+.custom-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 8px;
+    border: solid #041719;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-bottom: 2px;
+}
+
+body.light-theme .custom-checkbox {
+    border: 1px solid rgba(14, 140, 129, 0.4);
+    background: #fff;
+}
+
+body.light-theme .custom-checkbox:checked {
+    background: #0e8c81;
+    border-color: #0e8c81;
+}
+
+body.light-theme .custom-checkbox:checked::after {
+    border-color: #fff;
+}
+
+.theme-toggle:focus-visible {
+    outline: 2px solid #5de0d4;
+    outline-offset: 2px;
+}
+
+body.light-theme .theme-toggle:focus-visible {
+    outline: 2px solid #0e8c81;
+}
+.login-visual-container {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    perspective: 1000px;
+    padding: 24px;
 }
