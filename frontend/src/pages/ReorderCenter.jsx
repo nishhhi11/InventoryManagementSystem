@@ -27,7 +27,7 @@ function ReorderCenter() {
                     <div className="good-state">
                         <div className="good-icon">✓</div>
                         <h2>No restocking required</h2>
-                        <p>All products are above their reorder levels.</p>
+                        <p>All products are currently at or above their reorder levels.</p>
                     </div>
                 ) : (
                     <div className="reorder-grid">
