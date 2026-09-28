@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getProducts, updateStock, getCategories, createProduct } from "../services/api";
-import { Search, Plus, Filter, Package, AlertTriangle, Layers, Edit2, Check } from "lucide-react";
+import { Search, Plus, Filter, Package, AlertTriangle, Layers, Edit2, Check, X } from "lucide-react";
 
 function Inventory() {
     const [products, setProducts] = useState([]);
