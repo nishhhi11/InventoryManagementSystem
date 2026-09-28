@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getProducts, updateStock } from "../services/api";
+import { getProducts, updateStock, getCategories, createProduct } from "../services/api";
 
 function Inventory() {
     const [products, setProducts] = useState([]);
@@ -9,6 +9,28 @@ function Inventory() {
     const [stock, setStock] = useState("");
     const [reason, setReason] = useState("Manual Adjustment");
     const [error, setError] = useState("");
+
+    const [categories, setCategories] = useState([]);
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [adding, setAdding] = useState(false);
+    const [newProduct, setNewProduct] = useState({
+        name: "", sku: "", price: "", stockQuantity: "", reorderLevel: "", category: "", description: ""
+    });
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const data = await getCategories();
+                setCategories(data);
+                if (data.length > 0) {
+                    setNewProduct(prev => ({ ...prev, category: data[0]._id }));
+                }
+            } catch (err) {
+                console.error("Failed to load categories", err);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     const loadProducts = async () => {
         try {
@@ -46,6 +68,30 @@ function Inventory() {
         }
     };
 
+    const handleAddProduct = async (e) => {
+        e.preventDefault();
+        try {
+            setAdding(true);
+            setError("");
+            await createProduct({
+                name: newProduct.name,
+                sku: newProduct.sku,
+                price: Number(newProduct.price),
+                stockQuantity: Number(newProduct.stockQuantity),
+                reorderLevel: Number(newProduct.reorderLevel),
+                category: newProduct.category,
+                description: newProduct.description
+            });
+            setShowAddForm(false);
+            setNewProduct({ name: "", sku: "", price: "", stockQuantity: "", reorderLevel: "", category: categories.length > 0 ? categories[0]._id : "", description: "" });
+            await loadProducts();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setAdding(false);
+        }
+    };
+
     return (
         <div className="page">
             <div className="topbar">
@@ -54,15 +100,65 @@ function Inventory() {
                     <h1>Products</h1>
                 </div>
 
-                <input
-                    className="search-input"
-                    placeholder="Search products or SKU..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                />
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <input
+                        className="search-input"
+                        placeholder="Search products or SKU..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        style={{ width: '250px' }}
+                    />
+                    <button className="primary-btn" onClick={() => setShowAddForm(!showAddForm)}>
+                        {showAddForm ? "Cancel" : "+ Add Product"}
+                    </button>
+                </div>
             </div>
 
             {error && <div className="error-box">{error}</div>}
+
+            {showAddForm && (
+                <section className="panel" style={{ marginBottom: '24px', backgroundColor: 'var(--card-bg, #061d20)', padding: '24px', borderRadius: '12px' }}>
+                    <h3 style={{ marginBottom: '20px', color: 'var(--text-color, #dffafa)' }}>Add New Product</h3>
+                    <form onSubmit={handleAddProduct} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-muted, #769293)' }}>Product Name *</label>
+                            <input required className="search-input" style={{ width: '100%' }} value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-muted, #769293)' }}>SKU *</label>
+                            <input required className="search-input" style={{ width: '100%' }} value={newProduct.sku} onChange={e => setNewProduct({...newProduct, sku: e.target.value})} />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-muted, #769293)' }}>Price (₹) *</label>
+                            <input required type="number" min="0" step="0.01" className="search-input" style={{ width: '100%' }} value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-muted, #769293)' }}>Category *</label>
+                            <select required className="search-input" style={{ width: '100%', height: '42px' }} value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})}>
+                                <option value="" disabled>Select category</option>
+                                {categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-muted, #769293)' }}>Initial Stock Quantity *</label>
+                            <input required type="number" min="0" className="search-input" style={{ width: '100%' }} value={newProduct.stockQuantity} onChange={e => setNewProduct({...newProduct, stockQuantity: e.target.value})} />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-muted, #769293)' }}>Reorder Level *</label>
+                            <input required type="number" min="0" className="search-input" style={{ width: '100%' }} value={newProduct.reorderLevel} onChange={e => setNewProduct({...newProduct, reorderLevel: e.target.value})} />
+                        </div>
+                        <div style={{ gridColumn: '1 / -1' }}>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-muted, #769293)' }}>Description</label>
+                            <textarea className="search-input" style={{ width: '100%', minHeight: '80px', padding: '12px' }} value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})}></textarea>
+                        </div>
+                        <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                            <button type="submit" className="primary-btn" disabled={adding}>
+                                {adding ? "Adding..." : "Add Product"}
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            )}
 
             <section className="panel">
                 {loading ? (
