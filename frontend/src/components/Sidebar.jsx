@@ -28,10 +28,10 @@ function Sidebar({ user, page, setPage, logout, theme, toggleTheme }) {
     ];
 
     return (
-        <aside className="sidebar" style={{ width: isCollapsed ? '80px' : '230px', transition: 'width 0.3s ease', overflow: 'hidden', position: 'relative' }}>
+        <aside className="sidebar" style={{ width: isCollapsed ? '80px' : '230px', transition: 'width 0.3s ease', overflow: 'visible', position: 'relative' }}>
             <button 
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                style={{ position: 'absolute', top: '24px', right: '-12px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'var(--primary-light, #5de0d4)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10, color: '#000' }}
+                style={{ position: 'absolute', top: '24px', right: '-12px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'var(--primary-light, #5de0d4)', border: '2px solid var(--bg-color, #041719)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10, color: '#000', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
             >
                 {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
             </button>
@@ -58,9 +58,6 @@ function Sidebar({ user, page, setPage, logout, theme, toggleTheme }) {
                         >
                             <span className="nav-icon" style={{ position: 'relative' }}>
                                 {icon}
-                                {id === 'reorder' && reorderCount > 0 && (
-                                    <span style={{ position: 'absolute', top: '-4px', right: '-4px', width: '14px', height: '14px', backgroundColor: '#ff6b6b', borderRadius: '50%', fontSize: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold' }}>{reorderCount}</span>
-                                )}
                             </span>
                             {!isCollapsed && label}
                             {!isCollapsed && id === 'reorder' && reorderCount > 0 && (
@@ -101,8 +98,8 @@ function Sidebar({ user, page, setPage, logout, theme, toggleTheme }) {
                     <div className="user-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#5de0d4', flexShrink: 0 }}></div>
                     {!isCollapsed && (
                         <div className="user-info" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-                            <strong style={{ fontSize: '13px', color: '#dffafa' }}>{user.name}</strong>
-                            <span style={{ fontSize: '11px', color: '#769293', marginTop: '2px' }}>{user.role || 'Admin User'}</span>
+                            <strong style={{ fontSize: '13px', color: 'var(--sidebar-text, #dffafa)' }}>{user.name}</strong>
+                            <span style={{ fontSize: '11px', color: 'var(--sidebar-text-muted, #769293)', marginTop: '2px' }}>{user.role || 'Admin User'}</span>
                         </div>
                     )}
                 </div>
