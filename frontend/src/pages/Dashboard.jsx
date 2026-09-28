@@ -270,7 +270,7 @@ function Dashboard({ user }) {
                 <div style={{ padding: '20px', background: 'var(--card-bg, #061d20)', borderRadius: '12px', border: '1px solid rgba(255, 107, 107, 0.15)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#ff6b6b' }}></div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <div style={{ color: 'var(--text-muted, #769293)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Low stock</div>
+                        <div style={{ color: 'var(--text-muted, #769293)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Needs restock</div>
                         <div style={{ padding: '8px', backgroundColor: 'rgba(255, 107, 107, 0.1)', borderRadius: '8px', color: '#ff6b6b' }}>
                             <AlertTriangle size={18} />
                         </div>
@@ -375,14 +375,23 @@ function Dashboard({ user }) {
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             {reorderProducts.slice(0, 2).map((product) => {
-                                const stockQty = Number(product.stockQuantity) || 0;
+                                const stockQty = Number(product.currentStock) || 0;
                                 const reorderLvl = Number(product.reorderLevel) || 0;
                                 const shortage = Math.max(0, reorderLvl - stockQty);
                                 const progressPct = reorderLvl > 0 ? Math.min(100, (stockQty / reorderLvl) * 100) : 0;
 
+                                const isNeedsRestock = stockQty < reorderLvl;
+                                
+                                const cardBg = isNeedsRestock ? 'rgba(255, 107, 107, 0.05)' : 'rgba(232, 184, 77, 0.05)';
+                                const cardBorder = isNeedsRestock ? 'rgba(255, 107, 107, 0.2)' : 'rgba(232, 184, 77, 0.2)';
+                                const accentColor = isNeedsRestock ? '#ff6b6b' : '#e8b84d';
+                                const labelText = isNeedsRestock ? 'NEEDS ATTENTION' : 'LOW STOCK';
+                                const actionText = isNeedsRestock ? 'Restock' : 'Monitor';
+                                const shortageText = isNeedsRestock ? `${shortage} short` : 'At reorder level';
+
                                 return (
-                                    <div key={product._id} style={{ backgroundColor: 'rgba(255, 107, 107, 0.05)', border: '1px solid rgba(255, 107, 107, 0.2)', borderRadius: '12px', padding: '24px' }}>
-                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#ff6b6b', letterSpacing: '1px', marginBottom: '12px' }}>NEEDS ATTENTION</div>
+                                    <div key={product.productId} style={{ backgroundColor: cardBg, border: `1px solid ${cardBorder}`, borderRadius: '12px', padding: '24px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: 600, color: accentColor, letterSpacing: '1px', marginBottom: '12px' }}>{labelText}</div>
                                         <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-color, #dffafa)' }}>{product.name}</div>
                                         <div style={{ fontSize: '12px', color: 'var(--text-muted, #769293)', marginBottom: '16px' }}>{product.sku}</div>
 
@@ -390,16 +399,16 @@ function Dashboard({ user }) {
                                             <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-color, #dffafa)', lineHeight: 1 }}>
                                                 {stockQty} <span style={{ fontSize: '14px', color: 'var(--text-muted, #769293)', fontWeight: 600 }}>/ {reorderLvl}</span>
                                             </div>
-                                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#ff6b6b' }}>
-                                                {shortage} short
+                                            <div style={{ fontSize: '12px', fontWeight: 600, color: accentColor }}>
+                                                {shortageText}
                                             </div>
                                         </div>
 
-                                        <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--card-bg, #061d20)', borderRadius: '4px', overflow: 'hidden', marginBottom: '20px', border: '1px solid rgba(255, 107, 107, 0.1)' }}>
-                                            <div style={{ width: `${progressPct}%`, height: '100%', backgroundColor: progressPct > 50 ? '#e8b84d' : '#ff6b6b', transition: 'width 0.5s ease-in-out' }}></div>
+                                        <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--card-bg, #061d20)', borderRadius: '4px', overflow: 'hidden', marginBottom: '20px', border: `1px solid ${cardBorder}` }}>
+                                            <div style={{ width: `${progressPct}%`, height: '100%', backgroundColor: accentColor, transition: 'width 0.5s ease-in-out' }}></div>
                                         </div>
 
-                                        <div style={{ backgroundColor: 'var(--card-bg, #061d20)', borderRadius: '8px', padding: '16px', marginBottom: '16px', border: '1px solid rgba(255, 107, 107, 0.1)' }}>
+                                        <div style={{ backgroundColor: 'var(--card-bg, #061d20)', borderRadius: '8px', padding: '16px', marginBottom: '16px', border: `1px solid ${cardBorder}` }}>
                                             <div style={{ fontSize: '11px', color: 'var(--text-muted, #769293)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', fontWeight: 600 }}>Stock health</div>
                                             
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
@@ -414,14 +423,14 @@ function Dashboard({ user }) {
 
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
                                                 <span style={{ color: 'var(--text-muted, #769293)' }}>Shortage</span>
-                                                <strong style={{ color: '#ff6b6b' }}>{shortage}</strong>
+                                                <strong style={{ color: accentColor }}>{shortage}</strong>
                                             </div>
 
                                             <div style={{ width: '100%', height: '1px', backgroundColor: 'rgba(93, 224, 212, 0.1)', margin: '12px 0' }}></div>
 
                                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                                                 <span style={{ color: 'var(--text-muted, #769293)' }}>Suggested action</span>
-                                                <strong style={{ color: 'var(--primary-light, #5de0d4)' }}>Restock</strong>
+                                                <strong style={{ color: isNeedsRestock ? '#ff6b6b' : '#e8b84d' }}>{actionText}</strong>
                                             </div>
                                         </div>
 

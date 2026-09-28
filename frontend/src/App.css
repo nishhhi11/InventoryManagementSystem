@@ -1494,6 +1494,10 @@ body.light-theme .theme-toggle:hover {
     }
 }
 
+.inventory-row:hover {
+    background-color: var(--surface-hover, rgba(255,255,255,0.03));
+}
+
 /* NEW REFERENCE STYLES */
 
 body.light-theme .app {

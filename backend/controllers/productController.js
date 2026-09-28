@@ -290,7 +290,7 @@ const getProductStats = async (req, res) => {
 
         const lowStockProducts = await Product.countDocuments({
             $expr: {
-                $lte: ["$stockQuantity", "$reorderLevel"]
+                $lt: ["$stockQuantity", "$reorderLevel"]
             }
         });
 
@@ -312,7 +312,7 @@ const getReorderRecommendations = async (req, res) => {
     try {
         const products = await Product.find({
             $expr: {
-                $lte: ["$stockQuantity", "$reorderLevel"]
+                $lt: ["$stockQuantity", "$reorderLevel"]
             }
         }).populate("category", "name");
 

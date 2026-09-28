@@ -32,8 +32,8 @@ function ReorderCenter() {
                 ) : (
                     <div className="reorder-grid">
                         {products.map((product) => (
-                            <div className="reorder-card" key={product._id}>
-                                <p className="eyebrow">LOW STOCK</p>
+                            <div className="reorder-card" key={product.productId}>
+                                <p className="eyebrow">NEEDS ATTENTION</p>
 
                                 <h3>{product.name}</h3>
 
@@ -42,7 +42,7 @@ function ReorderCenter() {
                                 <div className="reorder-numbers">
                                     <div>
                                         <span>Current</span>
-                                        <strong>{product.stockQuantity}</strong>
+                                        <strong>{product.currentStock}</strong>
                                     </div>
 
                                     <div>
