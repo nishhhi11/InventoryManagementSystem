@@ -3,6 +3,12 @@ const Category = require("../models/Category");
 const StockMovement = require("../models/StockMovement");
 const ActivityLog = require("../models/ActivityLog");
 
+const sendError = (res, message, error) =>
+    res.status(500).json({ message, error: error.message });
+
+const notFound = (res, message) =>
+    res.status(404).json({ message });
+
 const createProduct = async (req, res) => {
     try {
         const {
@@ -15,13 +21,7 @@ const createProduct = async (req, res) => {
             category
         } = req.body;
 
-        if (
-            !name ||
-            !sku ||
-            price === undefined ||
-            stockQuantity === undefined ||
-            !category
-        ) {
+        if (!name || !sku || price === undefined || stockQuantity === undefined || !category) {
             return res.status(400).json({
                 message: "Name, SKU, price, stock quantity and category are required"
             });
@@ -39,17 +39,11 @@ const createProduct = async (req, res) => {
             });
         }
 
-        const categoryExists = await Category.findById(category);
-
-        if (!categoryExists) {
-            return res.status(404).json({
-                message: "Category not found"
-            });
+        if (!await Category.findById(category)) {
+            return notFound(res, "Category not found");
         }
 
-        const existingSKU = await Product.findOne({ sku });
-
-        if (existingSKU) {
+        if (await Product.findOne({ sku })) {
             return res.status(400).json({
                 message: "SKU already exists"
             });
@@ -70,17 +64,13 @@ const createProduct = async (req, res) => {
             product
         });
     } catch (error) {
-        res.status(500).json({
-            message: "Failed to create product",
-            error: error.message
-        });
+        sendError(res, "Failed to create product", error);
     }
 };
 
 const getProducts = async (req, res) => {
     try {
         const { search, category, lowStock } = req.query;
-
         const filter = {};
 
         if (search) {
@@ -90,9 +80,7 @@ const getProducts = async (req, res) => {
             ];
         }
 
-        if (category) {
-            filter.category = category;
-        }
+        if (category) filter.category = category;
 
         if (lowStock === "true") {
             filter.$expr = {
@@ -100,17 +88,11 @@ const getProducts = async (req, res) => {
             };
         }
 
-        const products = await Product.find(filter).populate(
-            "category",
-            "name"
-        );
+        const products = await Product.find(filter).populate("category", "name");
 
         res.status(200).json(products);
     } catch (error) {
-        res.status(500).json({
-            message: "Failed to fetch products",
-            error: error.message
-        });
+        sendError(res, "Failed to fetch products", error);
     }
 };
 
@@ -121,18 +103,11 @@ const getProductById = async (req, res) => {
             "name"
         );
 
-        if (!product) {
-            return res.status(404).json({
-                message: "Product not found"
-            });
-        }
+        if (!product) return notFound(res, "Product not found");
 
         res.status(200).json(product);
     } catch (error) {
-        res.status(500).json({
-            message: "Failed to fetch product",
-            error: error.message
-        });
+        sendError(res, "Failed to fetch product", error);
     }
 };
 
@@ -160,14 +135,8 @@ const updateProduct = async (req, res) => {
             });
         }
 
-        if (category) {
-            const categoryExists = await Category.findById(category);
-
-            if (!categoryExists) {
-                return res.status(404).json({
-                    message: "Category not found"
-                });
-            }
+        if (category && !await Category.findById(category)) {
+            return notFound(res, "Category not found");
         }
 
         const product = await Product.findByIdAndUpdate(
@@ -187,21 +156,14 @@ const updateProduct = async (req, res) => {
             }
         ).populate("category", "name");
 
-        if (!product) {
-            return res.status(404).json({
-                message: "Product not found"
-            });
-        }
+        if (!product) return notFound(res, "Product not found");
 
         res.status(200).json({
             message: "Product updated successfully",
             product
         });
     } catch (error) {
-        res.status(500).json({
-            message: "Failed to update product",
-            error: error.message
-        });
+        sendError(res, "Failed to update product", error);
     }
 };
 
@@ -229,17 +191,12 @@ const updateStock = async (req, res) => {
 
         const product = await Product.findById(req.params.id);
 
-        if (!product) {
-            return res.status(404).json({
-                message: "Product not found"
-            });
-        }
+        if (!product) return notFound(res, "Product not found");
 
         const previousQuantity = product.stockQuantity;
         const quantityChanged = stockQuantity - previousQuantity;
 
         product.stockQuantity = stockQuantity;
-
         await product.save();
 
         await StockMovement.create({
@@ -269,10 +226,7 @@ const updateStock = async (req, res) => {
             product: updatedProduct
         });
     } catch (error) {
-        res.status(500).json({
-            message: "Failed to update stock",
-            error: error.message
-        });
+        sendError(res, "Failed to update stock", error);
     }
 };
 
@@ -280,20 +234,13 @@ const deleteProduct = async (req, res) => {
     try {
         const product = await Product.findByIdAndDelete(req.params.id);
 
-        if (!product) {
-            return res.status(404).json({
-                message: "Product not found"
-            });
-        }
+        if (!product) return notFound(res, "Product not found");
 
         res.status(200).json({
             message: "Product deleted successfully"
         });
     } catch (error) {
-        res.status(500).json({
-            message: "Failed to delete product",
-            error: error.message
-        });
+        sendError(res, "Failed to delete product", error);
     }
 };
 
@@ -305,14 +252,35 @@ const getProductStats = async (req, res) => {
             {
                 $group: {
                     _id: null,
-                    totalStock: { 
-                        $sum: { $convert: { input: "$stockQuantity", to: "double", onError: 0, onNull: 0 } } 
+                    totalStock: {
+                        $sum: {
+                            $convert: {
+                                input: "$stockQuantity",
+                                to: "double",
+                                onError: 0,
+                                onNull: 0
+                            }
+                        }
                     },
                     inventoryValue: {
                         $sum: {
                             $multiply: [
-                                { $convert: { input: "$price", to: "double", onError: 0, onNull: 0 } },
-                                { $convert: { input: "$stockQuantity", to: "double", onError: 0, onNull: 0 } }
+                                {
+                                    $convert: {
+                                        input: "$price",
+                                        to: "double",
+                                        onError: 0,
+                                        onNull: 0
+                                    }
+                                },
+                                {
+                                    $convert: {
+                                        input: "$stockQuantity",
+                                        to: "double",
+                                        onError: 0,
+                                        onNull: 0
+                                    }
+                                }
                             ]
                         }
                     }
@@ -336,10 +304,7 @@ const getProductStats = async (req, res) => {
             inventoryValue: stockResult[0]?.inventoryValue || 0
         });
     } catch (error) {
-        res.status(500).json({
-            message: "Failed to fetch product statistics",
-            error: error.message
-        });
+        sendError(res, "Failed to fetch product statistics", error);
     }
 };
 
@@ -363,10 +328,7 @@ const getReorderRecommendations = async (req, res) => {
 
         res.status(200).json(recommendations);
     } catch (error) {
-        res.status(500).json({
-            message: "Failed to fetch reorder recommendations",
-            error: error.message
-        });
+        sendError(res, "Failed to fetch reorder recommendations", error);
     }
 };
 
