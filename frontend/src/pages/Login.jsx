@@ -9,6 +9,10 @@ const credentials = {
     Staff: {
         email: "staff@inventory.com",
         password: "staff123"
+    },
+    Viewer: {
+        email: "viewer@inventory.com",
+        password: "viewer123"
     }
 };
 
@@ -42,14 +46,14 @@ function Login({ onLogin }) {
                 <div style={{ position: 'relative', zIndex: 1 }}>
                     <div className="brand-large">IM</div>
                     <p className="eyebrow">INVENTORY MANAGEMENT</p>
-                    <h1 style={{ color: '#ffffff' }}>Welcome</h1>
+                    <h1 className="login-title">Welcome</h1>
 
                     <p className="login-subtitle">Streamline your supply chain operations</p>
 
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted, #769293)', letterSpacing: '1px' }}>EMAIL</label>
                     <input 
                         type="email"
-                        style={{ width: '100%', padding: '12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'var(--text-color, #dffafa)', marginBottom: '16px', fontSize: '14px' }}
+                        style={{ marginBottom: '16px' }}
                         value={credentials[role]?.email || ""}
                         readOnly
                     />
@@ -57,24 +61,27 @@ function Login({ onLogin }) {
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted, #769293)', letterSpacing: '1px' }}>PASSWORD</label>
                     <input 
                         type="password"
-                        style={{ width: '100%', padding: '12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'var(--text-color, #dffafa)', marginBottom: '16px', fontSize: '14px' }}
+                        style={{ marginBottom: '24px' }}
                         value={credentials[role]?.password || ""}
                         readOnly
                     />
                     
+                    <div className="role-segment-group">
+                        {["Admin", "Staff", "Viewer"].map(r => (
+                            <button
+                                key={r}
+                                className={`role-segment ${role === r ? 'active' : ''}`}
+                                onClick={() => setRole(r)}
+                            >
+                                {r}
+                            </button>
+                        ))}
+                    </div>
+
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--text-muted, #769293)' }}>
-                            <input type="checkbox" style={{ accentColor: 'var(--primary-light, #5de0d4)' }} /> Remember me
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted, #769293)', letterSpacing: 'normal' }}>
+                            <input type="checkbox" style={{ accentColor: 'var(--primary-light, #5de0d4)', width: '16px', height: '16px' }} /> Remember me
                         </label>
-                        <select
-                            className="role-select"
-                            style={{ margin: 0, padding: '4px 8px', fontSize: '12px', width: 'auto' }}
-                            value={role}
-                            onChange={e => setRole(e.target.value)}
-                        >
-                            <option value="Admin">Admin</option>
-                            <option value="Staff">Staff</option>
-                        </select>
                     </div>
 
                     {error && <div className="error-box">{error}</div>}

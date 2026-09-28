@@ -560,7 +560,7 @@ th {
     color: #a8c1c1;
 }
 
-.login-card input {
+.login-card input, .role-login-card input[type="email"], .role-login-card input[type="password"] {
     width: 100%;
     padding: 13px;
     background: #061c1e;
@@ -568,6 +568,7 @@ th {
     border-radius: 10px;
     color: white;
     outline: none;
+    font-size: 14px;
 }
 
 .error-box {
@@ -689,6 +690,31 @@ th {
     color: white;
 }
 
+.role-segment-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.role-segment {
+    flex: 1;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(100, 210, 200, 0.15);
+    border-radius: 10px;
+    color: #769293;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.role-segment.active {
+    background: rgba(93, 224, 212, 0.1);
+    border-color: #52d8ce;
+    color: #52d8ce;
+}
+
 .enter-button {
     width: 100%;
     margin-top: 20px;
@@ -769,6 +795,25 @@ body.light-theme .enter-button,
 body.light-theme .primary-button {
     background: #0e8c81;
     color: #ffffff;
+}
+
+body.light-theme .role-login-card input[type="email"],
+body.light-theme .role-login-card input[type="password"] {
+    background: #f1f5f4;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    color: #1a2a2c;
+}
+
+body.light-theme .role-segment {
+    background: #f9fbfb;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #5c7476;
+}
+
+body.light-theme .role-segment.active {
+    background: rgba(14, 140, 129, 0.1);
+    border-color: #0e8c81;
+    color: #0e8c81;
 }
 
 body.light-theme .user-card {
