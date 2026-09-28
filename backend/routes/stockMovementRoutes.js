@@ -1,8 +1,6 @@
 const express = require("express");
-const {
-    getStockMovements
-} = require("../controllers/stockMovementController");
 
+const { getStockMovements } = require("../controllers/stockMovementController");
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();

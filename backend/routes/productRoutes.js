@@ -16,17 +16,13 @@ const { protect } = require("../middleware/authMiddleware");
 const router = express.Router();
 
 router.get("/", protect, getProducts);
-
 router.get("/stats", protect, getProductStats);
-
 router.get("/reorder", protect, getReorderRecommendations);
-
 router.get("/:id", protect, getProductById);
 
 router.post("/", protect, createProduct);
 
 router.patch("/:id/stock", protect, updateStock);
-
 router.patch("/:id", protect, updateProduct);
 
 router.delete("/:id", protect, deleteProduct);
