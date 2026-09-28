@@ -199,13 +199,13 @@ function Dashboard({ user }) {
 
 
             {/* INVENTORY VALUE HERO PANEL */}
-            <section style={{ 
-                background: 'linear-gradient(135deg, var(--card-bg, #061d20) 0%, rgba(105, 167, 186, 0.1) 100%)', 
-                borderRadius: '16px', 
-                padding: '30px', 
-                marginBottom: '24px', 
-                border: '1px solid rgba(110, 220, 210, 0.15)', 
-                position: 'relative', 
+            <section style={{
+                background: 'linear-gradient(135deg, var(--card-bg, #061d20) 0%, rgba(105, 167, 186, 0.1) 100%)',
+                borderRadius: '16px',
+                padding: '30px',
+                marginBottom: '24px',
+                border: '1px solid rgba(110, 220, 210, 0.15)',
+                position: 'relative',
                 overflow: 'hidden'
             }}>
                 <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' }}>
@@ -233,12 +233,12 @@ function Dashboard({ user }) {
                 {/* Decorative Sparkline Chart */}
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, opacity: 0.15, zIndex: 0 }}>
                     <svg width="100%" height="80" viewBox="0 0 1000 80" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M0 60 C 150 60, 250 20, 400 20 C 550 20, 650 70, 800 70 C 900 70, 950 40, 1000 40" stroke="var(--primary-light, #5de0d4)" strokeWidth="3" strokeLinecap="round"/>
-                        <path d="M0 60 C 150 60, 250 20, 400 20 C 550 20, 650 70, 800 70 C 900 70, 950 40, 1000 40 L1000 80 L0 80 Z" fill="url(#paint0_linear_hero)"/>
+                        <path d="M0 60 C 150 60, 250 20, 400 20 C 550 20, 650 70, 800 70 C 900 70, 950 40, 1000 40" stroke="var(--primary-light, #5de0d4)" strokeWidth="3" strokeLinecap="round" />
+                        <path d="M0 60 C 150 60, 250 20, 400 20 C 550 20, 650 70, 800 70 C 900 70, 950 40, 1000 40 L1000 80 L0 80 Z" fill="url(#paint0_linear_hero)" />
                         <defs>
                             <linearGradient id="paint0_linear_hero" x1="500" y1="20" x2="500" y2="80" gradientUnits="userSpaceOnUse">
-                                <stop stopColor="var(--primary-light, #5de0d4)" stopOpacity="0.8"/>
-                                <stop offset="1" stopColor="var(--primary-light, #5de0d4)" stopOpacity="0"/>
+                                <stop stopColor="var(--primary-light, #5de0d4)" stopOpacity="0.8" />
+                                <stop offset="1" stopColor="var(--primary-light, #5de0d4)" stopOpacity="0" />
                             </linearGradient>
                         </defs>
                     </svg>
@@ -260,10 +260,10 @@ function Dashboard({ user }) {
                     <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--danger-color, #ff6b6b)' }}>{stats?.lowStockProducts ?? 0}</div>
                 </div>
             </section>
-            
+
             {/* CHARTS ROW 1 */}
             <section className="dashboard-two-column chart-layout" style={{ marginTop: '20px' }}>
-                
+
                 {/* Inventory Status (Real Donut) */}
                 <div className="dashboard-section" style={{ display: 'flex', flexDirection: 'column' }}>
                     <div className="section-heading no-border">
@@ -359,31 +359,31 @@ function Dashboard({ user }) {
                                 const reorderLvl = Number(product.reorderLevel) || 0;
                                 const shortage = Math.max(0, reorderLvl - stockQty);
                                 const progressPct = reorderLvl > 0 ? Math.min(100, (stockQty / reorderLvl) * 100) : 0;
-                                
-                                return (
-                                <div key={product._id} style={{ backgroundColor: 'rgba(255, 107, 107, 0.05)', border: '1px solid rgba(255, 107, 107, 0.2)', borderRadius: '12px', padding: '24px' }}>
-                                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#ff6b6b', letterSpacing: '1px', marginBottom: '12px' }}>NEEDS ATTENTION</div>
-                                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-color, #dffafa)' }}>{product.name}</div>
-                                    <div style={{ fontSize: '12px', color: 'var(--text-muted, #769293)', marginBottom: '16px' }}>{product.sku}</div>
 
-                                    <div style={{ fontSize: '13px', marginBottom: '8px', color: 'var(--text-color, #dffafa)' }}>
-                                        <strong>{stockQty} / {reorderLvl} units</strong>
+                                return (
+                                    <div key={product._id} style={{ backgroundColor: 'rgba(255, 107, 107, 0.05)', border: '1px solid rgba(255, 107, 107, 0.2)', borderRadius: '12px', padding: '24px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#ff6b6b', letterSpacing: '1px', marginBottom: '12px' }}>NEEDS ATTENTION</div>
+                                        <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-color, #dffafa)' }}>{product.name}</div>
+                                        <div style={{ fontSize: '12px', color: 'var(--text-muted, #769293)', marginBottom: '16px' }}>{product.sku}</div>
+
+                                        <div style={{ fontSize: '13px', marginBottom: '8px', color: 'var(--text-color, #dffafa)' }}>
+                                            <strong>{stockQty} / {reorderLvl} units</strong>
+                                        </div>
+
+                                        <div style={{ width: '100%', height: '6px', backgroundColor: 'rgba(255, 107, 107, 0.15)', borderRadius: '4px', overflow: 'hidden', marginBottom: '12px' }}>
+                                            <div style={{ width: `${progressPct}%`, height: '100%', backgroundColor: '#ff6b6b' }}></div>
+                                        </div>
+
+                                        <div style={{ fontSize: '12px', color: '#ff6b6b', marginBottom: '20px' }}>
+                                            {shortage} units below reorder level
+                                        </div>
+
+                                        <div style={{ textAlign: 'right' }}>
+                                            <button onClick={() => window.dispatchEvent(new CustomEvent("open-reorder-center"))} style={{ background: 'none', border: 'none', color: 'var(--primary-light, #5de0d4)', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: '13px' }}>
+                                                Update stock →
+                                            </button>
+                                        </div>
                                     </div>
-                                    
-                                    <div style={{ width: '100%', height: '6px', backgroundColor: 'rgba(255, 107, 107, 0.15)', borderRadius: '4px', overflow: 'hidden', marginBottom: '12px' }}>
-                                        <div style={{ width: `${progressPct}%`, height: '100%', backgroundColor: '#ff6b6b' }}></div>
-                                    </div>
-                                    
-                                    <div style={{ fontSize: '12px', color: '#ff6b6b', marginBottom: '20px' }}>
-                                        {shortage} units below reorder level
-                                    </div>
-                                    
-                                    <div style={{ textAlign: 'right' }}>
-                                        <button onClick={() => window.dispatchEvent(new CustomEvent("open-reorder-center"))} style={{ background: 'none', border: 'none', color: 'var(--primary-light, #5de0d4)', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: '13px' }}>
-                                            Update stock →
-                                        </button>
-                                    </div>
-                                </div>
                                 );
                             })}
                         </div>
@@ -437,12 +437,12 @@ function Dashboard({ user }) {
                                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
                             >
                                 <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                                    <div style={{ 
-                                        width: '42px', height: '42px', 
-                                        borderRadius: '8px', 
-                                        backgroundColor: 'rgba(93, 224, 212, 0.1)', 
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                                        fontSize: '18px', fontWeight: 700, color: 'var(--primary-light, #5de0d4)' 
+                                    <div style={{
+                                        width: '42px', height: '42px',
+                                        borderRadius: '8px',
+                                        backgroundColor: 'rgba(93, 224, 212, 0.1)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: '18px', fontWeight: 700, color: 'var(--primary-light, #5de0d4)'
                                     }}>
                                         {product.name.charAt(0).toUpperCase()}
                                     </div>
@@ -459,7 +459,7 @@ function Dashboard({ user }) {
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
                                     <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-color, #dffafa)' }}>
                                         {product.stockQuantity} units
@@ -513,7 +513,7 @@ function Dashboard({ user }) {
                             const changeColor = isIncrease ? '#4bb9a2' : '#ff6b6b';
                             const changePrefix = isIncrease ? '+' : '';
                             const timeStr = formatTime(movement.createdAt).replace(',', ' ·');
-                            
+
                             return (
                                 <div key={movement._id} style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -541,6 +541,7 @@ function Dashboard({ user }) {
 
         </div>
     );
+
 }
 
 export default Dashboard;

@@ -24,11 +24,9 @@ function Categories({ user }) {
 
         try {
             await createCategory({ name, description });
-
             setName("");
             setDescription("");
-
-            await loadCategories();
+            loadCategories();
         } catch (error) {
             setError(error.message);
         }
@@ -60,14 +58,10 @@ function Categories({ user }) {
                         <input
                             value={description}
                             placeholder="Description"
-                            onChange={(e) =>
-                                setDescription(e.target.value)
-                            }
+                            onChange={(e) => setDescription(e.target.value)}
                         />
 
-                        <button className="primary-small">
-                            Add Category
-                        </button>
+                        <button className="primary-small">Add Category</button>
                     </form>
                 </section>
             )}
@@ -77,13 +71,8 @@ function Categories({ user }) {
                     {categories.map((category) => (
                         <div className="category-card" key={category._id}>
                             <div className="category-icon">▣</div>
-
                             <h3>{category.name}</h3>
-
-                            <p>
-                                {category.description ||
-                                    "No description available"}
-                            </p>
+                            <p>{category.description || "No description available"}</p>
                         </div>
                     ))}
                 </div>

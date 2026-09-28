@@ -11,7 +11,6 @@ function StockHistory() {
             <section className="panel">
                 <div className="empty-state">
                     <h3>Stock movement tracking is active</h3>
-
                     <p>
                         Every stock update is being recorded in MongoDB.
                         The history viewer will use the stock movement API.
