@@ -2,6 +2,12 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
+const sendError = (res, message, error) =>
+    res.status(500).json({
+        message,
+        error: error.message
+    });
+
 const registerUser = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
@@ -12,9 +18,7 @@ const registerUser = async (req, res) => {
             });
         }
 
-        const existingUser = await User.findOne({ email });
-
-        if (existingUser) {
+        if (await User.findOne({ email })) {
             return res.status(400).json({
                 message: "User already exists"
             });
@@ -39,10 +43,7 @@ const registerUser = async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({
-            message: "Registration failed",
-            error: error.message
-        });
+        sendError(res, "Registration failed", error);
     }
 };
 
@@ -94,10 +95,7 @@ const loginUser = async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({
-            message: "Login failed",
-            error: error.message
-        });
+        sendError(res, "Login failed", error);
     }
 };
 
