@@ -1,22 +1,17 @@
 import { useEffect, useState } from "react";
-import api from "../services/api";
-import { useAuth } from "../context/AuthContext";
+import { createCategory, getCategories } from "../services/api";
 
-const Categories = () => {
-    const { user } = useAuth();
-
+function Categories({ user }) {
     const [categories, setCategories] = useState([]);
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [message, setMessage] = useState("");
     const [error, setError] = useState("");
 
     const loadCategories = async () => {
         try {
-            const response = await api.get("/categories");
-            setCategories(response.data);
+            setCategories(await getCategories());
         } catch (error) {
-            console.error(error);
+            setError(error.message);
         }
     };
 
@@ -24,148 +19,77 @@ const Categories = () => {
         loadCategories();
     }, []);
 
-    const createCategory = async (e) => {
+    const addCategory = async (e) => {
         e.preventDefault();
 
-        setMessage("");
-        setError("");
-
         try {
-            await api.post("/categories", {
-                name,
-                description
-            });
+            await createCategory({ name, description });
 
             setName("");
             setDescription("");
-            setMessage("Category created successfully.");
-            loadCategories();
+
+            await loadCategories();
         } catch (error) {
-            setError(
-                error.response?.data?.message ||
-                    "Failed to create category"
-            );
+            setError(error.message);
         }
     };
 
     return (
         <div className="page">
-            <div className="page-heading">
+            <div className="topbar">
                 <div>
-                    <p className="eyebrow">Organization</p>
-                    <h2>Categories</h2>
-                    <p>
-                        Organize your products into manageable
-                        groups.
-                    </p>
+                    <p className="eyebrow">CATALOG</p>
+                    <h1>Categories</h1>
                 </div>
             </div>
 
-            <div className="category-layout">
-                <section className="panel">
-                    <div className="panel-header">
-                        <div>
-                            <p className="eyebrow">
-                                Categories
-                            </p>
-                            <h3>All categories</h3>
-                        </div>
+            {error && <div className="error-box">{error}</div>}
 
-                        <span className="count-pill">
-                            {categories.length}
-                        </span>
-                    </div>
+            {user.role === "Admin" && (
+                <section className="panel category-form">
+                    <h3>Add Category</h3>
 
-                    <div className="category-list">
-                        {categories.map((category) => (
-                            <div
-                                className="category-row"
-                                key={category._id}
-                            >
-                                <div className="category-icon">
-                                    {category.name
-                                        ?.charAt(0)
-                                        ?.toUpperCase()}
-                                </div>
+                    <form onSubmit={addCategory}>
+                        <input
+                            value={name}
+                            placeholder="Category name"
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                        />
 
-                                <div>
-                                    <strong>
-                                        {category.name}
-                                    </strong>
+                        <input
+                            value={description}
+                            placeholder="Description"
+                            onChange={(e) =>
+                                setDescription(e.target.value)
+                            }
+                        />
 
-                                    <span>
-                                        {category.description ||
-                                            "No description"}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                        <button className="primary-small">
+                            Add Category
+                        </button>
+                    </form>
                 </section>
+            )}
 
-                {user?.role === "Admin" && (
-                    <section className="panel">
-                        <div className="panel-header">
-                            <div>
-                                <p className="eyebrow">
-                                    Admin
-                                </p>
-                                <h3>Add category</h3>
-                            </div>
+            <section className="panel">
+                <div className="category-grid">
+                    {categories.map((category) => (
+                        <div className="category-card" key={category._id}>
+                            <div className="category-icon">▣</div>
+
+                            <h3>{category.name}</h3>
+
+                            <p>
+                                {category.description ||
+                                    "No description available"}
+                            </p>
                         </div>
-
-                        <form
-                            className="category-form"
-                            onSubmit={createCategory}
-                        >
-                            <label>Category Name</label>
-
-                            <input
-                                value={name}
-                                onChange={(e) =>
-                                    setName(e.target.value)
-                                }
-                                placeholder="e.g. Accessories"
-                                required
-                            />
-
-                            <label>Description</label>
-
-                            <textarea
-                                value={description}
-                                onChange={(e) =>
-                                    setDescription(
-                                        e.target.value
-                                    )
-                                }
-                                placeholder="Describe this category..."
-                                rows="5"
-                            />
-
-                            {message && (
-                                <div className="success-message">
-                                    {message}
-                                </div>
-                            )}
-
-                            {error && (
-                                <div className="form-error">
-                                    {error}
-                                </div>
-                            )}
-
-                            <button
-                                className="primary-button"
-                                type="submit"
-                            >
-                                Create Category
-                            </button>
-                        </form>
-                    </section>
-                )}
-            </div>
+                    ))}
+                </div>
+            </section>
         </div>
     );
-};
+}
 
 export default Categories;

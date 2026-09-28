@@ -1,127 +1,87 @@
-import { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useState } from "react";
+import { loginUser } from "../services/api";
 
-const Login = () => {
-    const { user, login, loading } = useAuth();
-    const navigate = useNavigate();
-
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+function Login({ onLogin }) {
+    const [role, setRole] = useState("Admin");
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    useEffect(() => {
-        if (user) {
-            navigate("/", { replace: true });
-        }
-    }, [user, navigate]);
-
-    if (user) {
-        return <Navigate to="/" replace />;
-    }
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const login = async () => {
         setError("");
+        setLoading(true);
 
-        const result = await login(email, password);
+        const credentials = {
+            Admin: {
+                email: "admin@inventory.com",
+                password: "admin123"
+            },
+            Staff: {
+                email: "staff@inventory.com",
+                password: "staff123"
+            }
+        };
 
-        if (!result.success) {
-            setError(result.message);
-            return;
+        try {
+            const data = await loginUser(
+                credentials[role].email,
+                credentials[role].password
+            );
+
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+
+            onLogin(data.user);
+        } catch (error) {
+            setError(error.message);
+        } finally {
+            setLoading(false);
         }
-
-        navigate("/");
     };
 
     return (
         <div className="login-page">
-            <div className="login-decoration">
-                <div className="orb orb-one"></div>
-                <div className="orb orb-two"></div>
+            <div className="role-login-card">
+                <div className="brand-large">IM</div>
 
-                <div className="login-preview">
-                    <div className="preview-header">
-                        <div></div>
-                        <div></div>
-                        <div></div>
-                    </div>
+                <p className="eyebrow">INVENTORY MANAGEMENT</p>
 
-                    <div className="preview-grid">
-                        <div></div>
-                        <div></div>
-                        <div></div>
-                        <div className="preview-large"></div>
-                    </div>
-                </div>
-            </div>
+                <h1>Welcome</h1>
 
-            <div className="login-panel">
-                <div className="login-brand">
-                    <div className="brand-mark">IM</div>
-                    <div>
-                        <strong>Inventory</strong>
-                        <span>Management</span>
-                    </div>
-                </div>
-
-                <div className="login-content">
-                    <p className="eyebrow">Welcome back</p>
-                    <h1>Manage your inventory smarter.</h1>
-                    <p className="login-description">
-                        Monitor stock, track movements and keep
-                        your retail operations organized.
-                    </p>
-
-                    <form onSubmit={handleSubmit}>
-                        <label>Email</label>
-
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) =>
-                                setEmail(e.target.value)
-                            }
-                            placeholder="Enter your email"
-                            required
-                        />
-
-                        <label>Password</label>
-
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) =>
-                                setPassword(e.target.value)
-                            }
-                            placeholder="Enter your password"
-                            required
-                        />
-
-                        {error && (
-                            <div className="form-error">
-                                {error}
-                            </div>
-                        )}
-
-                        <button
-                            className="primary-button login-button"
-                            type="submit"
-                            disabled={loading}
-                        >
-                            {loading
-                                ? "Signing in..."
-                                : "Sign in"}
-                        </button>
-                    </form>
-                </div>
-
-                <p className="login-footer">
-                    Inventory Management System
+                <p className="login-subtitle">
+                    Select your role to continue
                 </p>
+
+                <label>ROLE</label>
+
+                <select
+                    className="role-select"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                >
+                    <option value="Admin">ADMIN</option>
+                    <option value="Staff">STAFF</option>
+                </select>
+
+                {error && (
+                    <div className="error-box">
+                        {error}
+                    </div>
+                )}
+
+                <button
+                    className="enter-button"
+                    onClick={login}
+                    disabled={loading}
+                >
+                    {loading ? "Signing in..." : "ENTER DASHBOARD"}
+                </button>
+
+                <div className="security-note">
+                    Secure role-based access
+                </div>
             </div>
         </div>
     );
-};
+}
 
 export default Login;

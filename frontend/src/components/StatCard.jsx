@@ -1,33 +1,30 @@
-const StatCard = ({
-    title,
+function StatCard({
     value,
-    subtitle,
+    label,
     icon,
-    danger = false
-}) => {
+    colorClass = "",
+    trend,
+    trendUp
+}) {
     return (
-        <div className={`stat-card ${danger ? "danger" : ""}`}>
-            <div className="stat-card-top">
-                <div className="stat-icon">{icon}</div>
-
-                {danger && (
-                    <span className="status-pill">
-                        Attention
-                    </span>
+        <div className={`stat-card ${colorClass}`}>
+            <div className="stat-card-icon">
+                {icon}
+            </div>
+            <div className="stat-card-info">
+                <span className="stat-card-label">{label}</span>
+                <strong className="stat-card-value">{value}</strong>
+                {trend && (
+                    <div className="stat-card-trend">
+                        <span className="trend-text">vs Last Month</span>
+                        <span className={`trend-badge ${trendUp ? 'up' : 'down'}`}>
+                            {trendUp ? '▲' : '▼'} {trend}%
+                        </span>
+                    </div>
                 )}
             </div>
-
-            <div className="stat-value">{value}</div>
-
-            <div className="stat-title">{title}</div>
-
-            {subtitle && (
-                <div className="stat-subtitle">
-                    {subtitle}
-                </div>
-            )}
         </div>
     );
-};
+}
 
 export default StatCard;

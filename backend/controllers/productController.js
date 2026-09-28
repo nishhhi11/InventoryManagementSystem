@@ -305,10 +305,15 @@ const getProductStats = async (req, res) => {
             {
                 $group: {
                     _id: null,
-                    totalStock: { $sum: "$stockQuantity" },
+                    totalStock: { 
+                        $sum: { $convert: { input: "$stockQuantity", to: "double", onError: 0, onNull: 0 } } 
+                    },
                     inventoryValue: {
                         $sum: {
-                            $multiply: ["$price", "$stockQuantity"]
+                            $multiply: [
+                                { $convert: { input: "$price", to: "double", onError: 0, onNull: 0 } },
+                                { $convert: { input: "$stockQuantity", to: "double", onError: 0, onNull: 0 } }
+                            ]
                         }
                     }
                 }

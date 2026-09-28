@@ -17,3 +17,8 @@ dist/
 
 # Editor
 .vscode/
+
+
+node_modules
+.env
+backend/token.json

@@ -1,157 +1,94 @@
-import {
-    BrowserRouter,
-    Navigate,
-    Route,
-    Routes
-} from "react-router-dom";
-
-import { AuthProvider, useAuth } from "./context/AuthContext";
-
-import Sidebar from "./components/Sidebar";
-import Header from "./components/Header";
-
+import { useEffect, useState } from "react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
-import Reorder from "./pages/Reorder";
+import ReorderCenter from "./pages/ReorderCenter";
 import Categories from "./pages/Categories";
-import History from "./pages/History";
-import Activity from "./pages/Activity";
+import StockHistory from "./pages/StockHistory";
+import ActivityLog from "./pages/ActivityLog";
+import Sidebar from "./components/Sidebar";
+import "./App.css";
 
-const Settings = () => {
-    const { user } = useAuth();
+function App() {
+    const [user, setUser] = useState(() => {
+        const savedUser = localStorage.getItem("user");
+        return savedUser ? JSON.parse(savedUser) : null;
+    });
 
-    return (
-        <div className="page">
-            <div className="page-heading">
-                <div>
-                    <p className="eyebrow">Account</p>
-                    <h2>Settings</h2>
-                    <p>
-                        Manage your account information.
-                    </p>
-                </div>
-            </div>
+    const [page, setPage] = useState("dashboard");
+    const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
 
-            <div className="panel settings-card">
-                <div className="settings-avatar">
-                    {user?.name?.charAt(0)?.toUpperCase()}
-                </div>
+    useEffect(() => {
+        if (theme === "light") {
+            document.body.classList.add("light-theme");
+        } else {
+            document.body.classList.remove("light-theme");
+        }
+        localStorage.setItem("theme", theme);
+    }, [theme]);
 
-                <div className="settings-info">
-                    <div>
-                        <span>Name</span>
-                        <strong>{user?.name}</strong>
-                    </div>
+    useEffect(() => {
+        const openInventory = () => setPage("inventory");
+        const openReorder = () => setPage("reorder");
+        const openCategories = () => setPage("categories");
+        const openHistory = () => setPage("history");
 
-                    <div>
-                        <span>Email</span>
-                        <strong>{user?.email}</strong>
-                    </div>
+        window.addEventListener("open-inventory", openInventory);
+        window.addEventListener("open-reorder-center", openReorder);
+        window.addEventListener("open-categories", openCategories);
+        window.addEventListener("open-history", openHistory);
 
-                    <div>
-                        <span>Role</span>
-                        <strong>{user?.role}</strong>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
+        return () => {
+            window.removeEventListener("open-inventory", openInventory);
+            window.removeEventListener("open-reorder-center", openReorder);
+            window.removeEventListener("open-categories", openCategories);
+            window.removeEventListener("open-history", openHistory);
+        };
+    }, []);
 
-const ProtectedLayout = () => {
-    const { user } = useAuth();
+    useEffect(() => {
+        if (user) {
+            localStorage.setItem("user", JSON.stringify(user));
+        }
+    }, [user]);
+
+    const handleLogin = (loggedInUser) => {
+        setUser(loggedInUser);
+        setPage("dashboard");
+    };
+
+    const logout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setUser(null);
+    };
+
+    const toggleTheme = () => setTheme(prev => prev === "dark" ? "light" : "dark");
 
     if (!user) {
-        return <Navigate to="/login" replace />;
+        return <Login onLogin={handleLogin} />;
     }
 
     return (
-        <div className="app-shell">
-            <Sidebar />
+        <div className="app">
+            <Sidebar
+                user={user}
+                page={page}
+                setPage={setPage}
+                logout={logout}
+                theme={theme}
+                toggleTheme={toggleTheme}
+            />
 
-            <div className="main-area">
-                <Header />
-
-                <main>
-                    <Routes>
-                        <Route
-                            path="/"
-                            element={<Dashboard />}
-                        />
-
-                        <Route
-                            path="/inventory"
-                            element={<Inventory />}
-                        />
-
-                        <Route
-                            path="/reorder"
-                            element={<Reorder />}
-                        />
-
-                        <Route
-                            path="/categories"
-                            element={<Categories />}
-                        />
-
-                        <Route
-                            path="/history"
-                            element={<History />}
-                        />
-
-                        <Route
-                            path="/activity"
-                            element={<Activity />}
-                        />
-
-                        <Route
-                            path="/settings"
-                            element={<Settings />}
-                        />
-
-                        <Route
-                            path="*"
-                            element={<Navigate to="/" replace />}
-                        />
-                    </Routes>
-                </main>
-            </div>
+            <main className="main-content">
+                {page === "dashboard" && <Dashboard user={user} />}
+                {page === "inventory" && <Inventory user={user} />}
+                {page === "reorder" && <ReorderCenter />}
+                {page === "categories" && <Categories user={user} />}
+                {page === "history" && <StockHistory />}
+                {page === "activity" && <ActivityLog />}
+            </main>
         </div>
-    );
-};
-
-const AppRoutes = () => {
-    const { user } = useAuth();
-
-    return (
-        <Routes>
-            <Route
-                path="/login"
-                element={
-                    user ? (
-                        <Navigate to="/" replace />
-                    ) : (
-                        <Login />
-                    )
-                }
-            />
-
-            <Route
-                path="/*"
-                element={<ProtectedLayout />}
-            />
-        </Routes>
-    );
-};
-
-function App() {
-    return (
-        <AuthProvider>
-            <BrowserRouter>
-                <AppRoutes />
-            </BrowserRouter>
-        </AuthProvider>
     );
 }
 
