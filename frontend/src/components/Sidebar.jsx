@@ -6,7 +6,7 @@ function Sidebar({ user, page, setPage, logout, theme, toggleTheme }) {
         ["inventory", "Inventory", <Package size={16} />],
         ["reorder", "Reorder", <RefreshCcw size={16} />]
     ];
-    
+
     const managementItems = [
         ["categories", "Categories", <Tags size={16} />],
         ["history", "Stock History", <History size={16} />],
@@ -62,7 +62,7 @@ function Sidebar({ user, page, setPage, logout, theme, toggleTheme }) {
                     </span>
                     Appearance
                 </button>
-                
+
                 <div className="sidebar-user" onClick={logout} title="Click to logout" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 15px', cursor: 'pointer', borderRadius: '12px', transition: 'background 0.2s' }}>
                     <div className="user-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#5de0d4' }}></div>
                     <div className="user-info" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
