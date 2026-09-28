@@ -6,6 +6,7 @@ const authRoutes = require("./routes/authRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const productRoutes = require("./routes/productRoutes");
 const stockMovementRoutes = require("./routes/stockMovementRoutes");
+const activityLogRoutes = require("./routes/activityLogRoutes");
 const errorHandler = require("./middleware/errorMiddleware");
 
 dotenv.config();
@@ -21,6 +22,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/stock-movements", stockMovementRoutes);
+app.use("/api/activity-logs", activityLogRoutes);
 
 app.use(errorHandler);
 

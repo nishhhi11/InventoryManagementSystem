@@ -60,3 +60,6 @@ export const createCategory = category =>
 
 export const getStockMovements = () =>
     request("/stock-movements");
+
+export const getActivityLogs = () =>
+    request("/activity-logs");
