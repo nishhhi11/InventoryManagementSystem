@@ -5,7 +5,6 @@ import Inventory from "./pages/Inventory";
 import ReorderCenter from "./pages/ReorderCenter";
 import Categories from "./pages/Categories";
 import StockHistory from "./pages/StockHistory";
-import ActivityLog from "./pages/ActivityLog";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
 
@@ -86,7 +85,6 @@ function App() {
                 {page === "reorder" && <ReorderCenter />}
                 {page === "categories" && <Categories user={user} />}
                 {page === "history" && <StockHistory />}
-                {page === "activity" && <ActivityLog />}
             </main>
         </div>
     );

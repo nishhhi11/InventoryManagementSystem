@@ -9,8 +9,7 @@ function Sidebar({ user, page, setPage, logout, theme, toggleTheme }) {
 
     const managementItems = [
         ["categories", "Categories", <Tags size={16} />],
-        ["history", "Stock History", <History size={16} />],
-        ["activity", "Activity", <Activity size={16} />]
+        ["history", "History & Logs", <History size={16} />]
     ];
 
     return (
