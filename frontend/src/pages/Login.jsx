@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { loginUser } from "../services/api";
+import { Box, Activity, History, Users } from "lucide-react";
 
 const credentials = {
     Admin: {
@@ -41,14 +42,47 @@ function Login({ onLogin }) {
 
     return (
         <div className="login-page">
-            <div className="role-login-card" style={{ position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'radial-gradient(circle, rgba(93, 224, 212, 0.1) 0%, transparent 60%)', pointerEvents: 'none', zIndex: 0 }}></div>
-                <div style={{ position: 'relative', zIndex: 1 }}>
-                    <div className="brand-large">IM</div>
-                    <p className="eyebrow">INVENTORY MANAGEMENT</p>
-                    <h1 className="login-title">Welcome</h1>
+            <div className="login-brand-panel">
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <h1 style={{ fontSize: '48px', margin: '0 0 16px', lineHeight: 1.1 }}>Know your stock.<br />Always.</h1>
+                    <p style={{ fontSize: '18px', color: '#8bbab7', margin: 0, maxWidth: '400px', lineHeight: 1.5 }}>
+                        The command center for your entire supply chain.
+                    </p>
 
-                    <p className="login-subtitle">Streamline your supply chain operations</p>
+                    <div className="login-features">
+                        <div className="login-feature">
+                            <div className="login-feature-icon"><Activity size={24} /></div>
+                            <div className="login-feature-text">
+                                <h4>Live Alerts</h4>
+                                <p>Get notified instantly when stock runs low</p>
+                            </div>
+                        </div>
+                        <div className="login-feature">
+                            <div className="login-feature-icon"><History size={24} /></div>
+                            <div className="login-feature-text">
+                                <h4>Stock History</h4>
+                                <p>Track every movement and adjustment</p>
+                            </div>
+                        </div>
+                        <div className="login-feature">
+                            <div className="login-feature-icon"><Users size={24} /></div>
+                            <div className="login-feature-text">
+                                <h4>Role-Based Access</h4>
+                                <p>Secure your data for admins and staff</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="login-form-panel">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+                    <div className="brand-icon" style={{ margin: 0, width: '40px', height: '40px' }}><Box size={24} /></div>
+                    <strong style={{ fontSize: '20px', letterSpacing: '1px' }}>INVENTORY MANAGEMENT</strong>
+                </div>
+
+                <h1 className="login-title" style={{ fontSize: '32px', margin: '0 0 8px' }}>Welcome back</h1>
+                <p className="login-subtitle">Sign in to your workspace</p>
 
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted, #769293)', letterSpacing: '1px' }}>EMAIL</label>
                     <input 
@@ -91,13 +125,12 @@ function Login({ onLogin }) {
                         onClick={login}
                         disabled={loading}
                     >
-                    {loading ? "Signing in..." : "ENTER DASHBOARD"}
-                </button>
+                        {loading ? "Signing in..." : "ENTER DASHBOARD"}
+                    </button>
 
-                <div className="security-note">
-                    Secure role-based access
-                </div>
-                </div>
+                    <div className="security-note">
+                        Secure role-based access
+                    </div>
             </div>
         </div>
     );

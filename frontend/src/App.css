@@ -528,8 +528,87 @@ th {
 .login-page {
     min-height: 100vh;
     background: #041719;
+    display: flex;
+}
+
+.login-brand-panel {
+    flex: 1;
+    background: linear-gradient(135deg, #071f21 0%, #031214 100%);
+    padding: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-brand-panel::before {
+    content: '';
+    position: absolute;
+    top: -200px;
+    left: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(93, 224, 212, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+body.light-theme .login-brand-panel {
+    background: linear-gradient(135deg, #0a3d38 0%, #05211e 100%);
+}
+
+.login-form-panel {
+    width: 500px;
+    background: #092325;
+    padding: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-left: 1px solid rgba(93, 224, 212, 0.1);
+}
+
+body.light-theme .login-form-panel {
+    background: #ffffff;
+    border-left: 1px solid rgba(0,0,0,0.08);
+}
+
+.login-features {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    margin-top: 60px;
+    max-width: 400px;
+}
+
+.login-feature {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.login-feature-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: rgba(93, 224, 212, 0.1);
+    color: #5de0d4;
     display: grid;
     place-items: center;
+    flex-shrink: 0;
+}
+
+.login-feature-text h4 {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.login-feature-text p {
+    margin: 0;
+    color: #8bbab7;
+    font-size: 14px;
+    line-height: 1.5;
 }
 
 .login-card {
@@ -560,7 +639,7 @@ th {
     color: #a8c1c1;
 }
 
-.login-card input, .role-login-card input[type="email"], .role-login-card input[type="password"] {
+.login-card input, .login-form-panel input[type="email"], .login-form-panel input[type="password"] {
     width: 100%;
     padding: 13px;
     background: #061c1e;
@@ -641,7 +720,7 @@ th {
     }
 }
 
-.role-login-card {
+.login-form-panel {
     width: 430px;
     padding: 45px;
     background: rgba(8, 30, 32, 0.92);
@@ -650,16 +729,16 @@ th {
     box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
 }
 
-.role-login-card .brand-large {
+.login-form-panel .brand-large {
     margin-bottom: 28px;
 }
 
-.role-login-card h1 {
+.login-form-panel h1 {
     font-size: 34px;
     margin: 8px 0;
 }
 
-.role-login-card label {
+.login-form-panel label {
     display: block;
     margin: 28px 0 8px;
     color: #52d8ce;
@@ -760,17 +839,17 @@ body.light-theme .login-page {
     background: #f4f7f7;
 }
 
-body.light-theme .role-login-card {
+body.light-theme .login-form-panel {
     background: #ffffff;
     border: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
 }
 
-body.light-theme .role-login-card h1 {
+body.light-theme .login-form-panel h1 {
     color: #1a2a2c;
 }
 
-body.light-theme .role-login-card label,
+body.light-theme .login-form-panel label,
 body.light-theme .eyebrow {
     color: #0e8c81;
 }
@@ -797,8 +876,8 @@ body.light-theme .primary-button {
     color: #ffffff;
 }
 
-body.light-theme .role-login-card input[type="email"],
-body.light-theme .role-login-card input[type="password"] {
+body.light-theme .login-form-panel input[type="email"],
+body.light-theme .login-form-panel input[type="password"] {
     background: #f1f5f4;
     border: 1px solid rgba(0, 0, 0, 0.08);
     color: #1a2a2c;
