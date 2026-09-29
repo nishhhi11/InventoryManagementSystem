@@ -74,12 +74,12 @@ function ReorderCenter() {
     const lowStockCount = products.filter(p => p.currentStock > 0 && p.currentStock <= p.reorderLevel).length;
 
     return (
-        <div style={{ flex: 1, backgroundColor: 'var(--bg-color, #020c0d)', padding: '32px', overflowY: 'auto' }}>
+        <div className="page" style={{ flex: 1, padding: '32px', overflowY: 'auto' }}>
             {/* TOP BAR */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', backgroundColor: 'var(--card-bg, #061d20)', padding: '10px 20px', borderRadius: '12px', border: '1px solid var(--border, rgba(93, 224, 212, 0.1))' }}>
                 <div>
-                    <div style={{ fontSize: '13px', color: 'var(--text-muted, #769293)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600, marginBottom: '4px' }}>Inventory Management</div>
-                    <h1 style={{ fontSize: '24px', fontWeight: 700, margin: 0, color: 'var(--text-color, #dffafa)' }}>Reorder Center</h1>
+                    <h1 style={{ fontSize: '18px', margin: 0, fontWeight: 700, color: 'var(--text-color,#dffafa)' }}>Reorder Center</h1>
+                    <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted,#769293)' }}>Manage items that are low or out of stock.</p>
                 </div>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -175,7 +175,7 @@ function ReorderCenter() {
                             return (
                                 <div key={product.productId} style={{ backgroundColor: 'var(--card-bg, #061d20)', padding: '24px', borderRadius: '16px', border: '1px solid var(--elem-border, rgba(255, 255, 255, 0.05))', display: 'flex', flexDirection: 'column' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                                        <div style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: statusColor, backgroundColor: isOut ? 'rgba(255, 107, 107, 0.1)' : 'rgba(248, 168, 73, 0.1)', border: \`1px solid \${isOut ? 'rgba(255, 107, 107, 0.2)' : 'rgba(248, 168, 73, 0.2)'}\` }}>
+                                        <div style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: statusColor, backgroundColor: isOut ? 'rgba(255, 107, 107, 0.1)' : 'rgba(248, 168, 73, 0.1)', border: `1px solid ${isOut ? 'rgba(255, 107, 107, 0.2)' : 'rgba(248, 168, 73, 0.2)'}` }}>
                                             {statusText}
                                         </div>
                                     </div>
@@ -189,7 +189,7 @@ function ReorderCenter() {
                                             <span>Reorder at: <strong>{product.reorderLevel}</strong></span>
                                         </div>
                                         <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--elem-bg, rgba(255,255,255,0.05))', borderRadius: '3px', overflow: 'hidden' }}>
-                                            <div style={{ height: '100%', width: \`\${progress}%\`, backgroundColor: statusColor, borderRadius: '3px' }}></div>
+                                            <div style={{ height: '100%', width: `${progress}%`, backgroundColor: statusColor, borderRadius: '3px' }}></div>
                                         </div>
                                     </div>
 
@@ -239,7 +239,7 @@ function ReorderCenter() {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                         <button onClick={() => setDrawerAdjustment(a => a - 1)} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'var(--text-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Minus size={14} /></button>
                                         <span style={{ fontSize: '18px', fontWeight: 700, color: drawerAdjustment > 0 ? '#4bb9a2' : drawerAdjustment < 0 ? '#ff6b6b' : 'var(--text-color)', width: '40px', textAlign: 'center' }}>
-                                            {drawerAdjustment > 0 ? \`+\${drawerAdjustment}\` : drawerAdjustment}
+                                            {drawerAdjustment > 0 ? `+${drawerAdjustment}` : drawerAdjustment}
                                         </span>
                                         <button onClick={() => setDrawerAdjustment(a => a + 1)} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'var(--text-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Plus size={14} /></button>
                                     </div>
