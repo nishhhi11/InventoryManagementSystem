@@ -10,10 +10,7 @@ import Sidebar from "./components/Sidebar";
 import "./App.css";
 
 function App() {
-    const [user, setUser] = useState(() => {
-        const savedUser = localStorage.getItem("user");
-        return savedUser ? JSON.parse(savedUser) : null;
-    });
+    const [user, setUser] = useState(null);
 
     const [page, setPage] = useState("dashboard");
     const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");

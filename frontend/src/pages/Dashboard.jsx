@@ -140,18 +140,15 @@ function Dashboard({ user }) {
         return "Stock adjusted";
     };
 
-    // Prepare chart data
+    // Prepare chart data — all 14 labels use the same "DD Mon" format
     const processStockInOut = () => {
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        // Seed baseline simulated data for empty days so chart always has variety
         const simulatedBase = [12, 8, 15, 6, 20, 10, 5, 18, 9, 14, 7, 22, 11, 16];
         const dataMap = {};
         for (let i = 13; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const label = i < 7
-                ? days[d.getDay()]
-                : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+            // Consistent short label: "16 Sep"
+            const label = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
             dataMap[d.toDateString()] = {
                 date: label,
                 in: simulatedBase[i] || 0,
@@ -237,7 +234,7 @@ function Dashboard({ user }) {
             acc[pid].total += Math.abs(mov.quantityChanged || 0);
             return acc;
         }, {})
-    ).sort((a, b) => b.total - a.total).slice(0, 6);
+    ).sort((a, b) => b.total - a.total).slice(0, 8);
     const maxTopMoving = topMoving[0]?.total || 1;
 
     const animatedOutOfStock = useCountUp(outOfStockProducts);
@@ -256,11 +253,18 @@ function Dashboard({ user }) {
         );
     }
 
-    // Mini sparkline for KPI cards (7 pts)
-    const kpiSparkBase = stats?.inventoryValue || 72960;
-    const miniSpark = (seed) => Array.from({ length: 7 }, (_, i) =>
-        ({ v: Math.round(kpiSparkBase * (0.9 + 0.1 * ((i + seed) / 10)) + Math.sin(i * seed) * kpiSparkBase * 0.03) })
-    );
+    // Mini sparkline for KPI cards — use small relative values so every seed
+    // produces a visible wave, not a solid fill block.
+    // Each seed generates a slightly different shape so the 4 cards look distinct.
+    const miniSpark = (seed) => {
+        const shapes = [
+            [55, 60, 52, 70, 65, 72, 68],   // Products    — gentle uptrend
+            [48, 55, 45, 62, 58, 70, 66],   // Total Units — similar uptrend
+            [30, 42, 38, 55, 50, 45, 52],   // Low Stock   — variable
+            [60, 50, 58, 42, 48, 38, 35],   // Out of Stock — downtrend (good)
+        ];
+        return (shapes[seed - 1] || shapes[0]).map(v => ({ v }));
+    };
 
     // Alert list for bell dropdown
     const alertItems = [
@@ -319,12 +323,29 @@ function Dashboard({ user }) {
         <div className="page real-dashboard">
             <style>{`
                 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-                .kpi-card { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+                @keyframes fadeUp { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+                @keyframes dropIn { from { opacity:0; transform:translateY(-8px) } to { opacity:1; transform:translateY(0) } }
+                @keyframes barGrow { from { transform:scaleY(0); transform-origin:bottom } to { transform:scaleY(1); transform-origin:bottom } }
+                /* KPI cards stagger in */
+                .kpi-card { transition: transform 0.18s ease, box-shadow 0.18s ease; animation: fadeUp 0.35s ease both; }
                 .kpi-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,0.25); }
-                .db-section-card { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+                .kpi-card:nth-child(1) { animation-delay: 0.04s }
+                .kpi-card:nth-child(2) { animation-delay: 0.10s }
+                .kpi-card:nth-child(3) { animation-delay: 0.16s }
+                .kpi-card:nth-child(4) { animation-delay: 0.22s }
+                /* Section cards: NO delay so they are never stuck at opacity:0 */
+                .db-section-card { transition: transform 0.18s ease, box-shadow 0.18s ease; animation: fadeUp 0.4s ease both; }
                 .db-section-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,0.2); }
                 .bell-dropdown { animation: dropIn 0.15s ease; }
-                @keyframes dropIn { from { opacity:0; transform:translateY(-8px) } to { opacity:1; transform:translateY(0) } }
+                .db-live-wrap { position: relative; }
+                .db-live-wrap .db-sync-tip {
+                    display: none; position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+                    background: rgba(6,29,32,0.96); border: 1px solid rgba(93,224,212,0.2); border-radius: 6px;
+                    padding: 4px 10px; font-size: 11px; color: #5de0d4; white-space: nowrap; z-index: 200;
+                    pointer-events: none;
+                }
+                .db-live-wrap:hover .db-sync-tip { display: block; }
+                .db-delta-badge { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:700; border-radius:4px; padding:2px 6px; margin-top:4px; }
             `}</style>
 
             {/* ═══ MERGED TOP BAR ═══ */}
@@ -338,25 +359,28 @@ function Dashboard({ user }) {
                 </div>
 
                 {/* Centre: search */}
-                <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '7px 14px', width: '34%', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="db-search-bar" style={{ display: 'flex', alignItems: 'center', borderRadius: '8px', padding: '7px 14px', width: '34%' }}>
                     <Search size={15} color="var(--text-muted,#769293)" />
                     <input type="text" placeholder="Global search..." style={{ background: 'none', border: 'none', outline: 'none', color: 'var(--text-color,#dffafa)', marginLeft: '10px', width: '100%', fontSize: '13px' }} />
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted,#769293)', backgroundColor: 'rgba(255,255,255,0.05)', padding: '2px 7px', borderRadius: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>⌘K</div>
+                    <div className="db-kbd-chip">⌘K</div>
                 </div>
 
                 {/* Right: live indicator + date + bell + user */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    {/* Live + sync */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted,#769293)' }}>
+                    {/* Live + sync — tooltip on hover shows last sync time */}
+                    <div className="db-live-wrap" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted,#769293)' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#5de0d4' }}>
-                            <span style={{ width: '6px', height: '6px', backgroundColor: 'currentColor', borderRadius: '50%', boxShadow: '0 0 8px currentColor' }}></span>
+                            <span style={{ width: '6px', height: '6px', backgroundColor: 'currentColor', borderRadius: '50%', boxShadow: '0 0 8px currentColor' }} />
                             Live
                         </span>
                         <span style={{ opacity: 0.4 }}>·</span>
                         <span>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-                        <button onClick={loadDashboard} style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--text-muted,#769293)', display: 'flex', opacity: 0.7 }} title="Refresh">
+                        <button onClick={loadDashboard} style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--text-muted,#769293)', display: 'flex', opacity: 0.7 }}>
                             <RefreshCw size={12} />
                         </button>
+                        {lastUpdated && (
+                            <span className="db-sync-tip">Synced {formatTime(lastUpdated)}</span>
+                        )}
                     </div>
 
                     <div style={{ width: '1px', height: '22px', backgroundColor: 'rgba(255,255,255,0.08)' }}></div>
@@ -426,41 +450,59 @@ function Dashboard({ user }) {
             </div>
 
             {/* HERO PANEL */}
-            <section className="db-section-card" style={{ background: 'linear-gradient(135deg, var(--card-bg, #061d20) 0%, rgba(93,224,212,0.07) 100%)', borderRadius: '16px', padding: '24px 28px 0 28px', marginBottom: '20px', border: '1px solid rgba(110,220,210,0.15)', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+            <section className="db-section-card" style={{ background: 'linear-gradient(135deg, var(--card-bg, #061d20) 0%, rgba(93,224,212,0.07) 100%)', borderRadius: '16px', padding: '20px 28px 0 28px', marginBottom: '20px', border: '1px solid rgba(110,220,210,0.15)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                     <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-                            <p style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.5px', color: 'var(--text-muted, #769293)', textTransform: 'uppercase', margin: 0 }}>Total Inventory Value</p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: 'rgba(75,185,162,0.15)', color: '#4bb9a2', padding: '3px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700 }}>
-                                <TrendingUp size={13} /> +4.2% this week
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+                            <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px', color: 'var(--text-muted, #769293)', textTransform: 'uppercase', margin: 0 }}>Total Inventory Value</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: 'rgba(75,185,162,0.15)', color: '#4bb9a2', padding: '2px 7px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>
+                                <TrendingUp size={12} /> +4.2% this week
                             </div>
                         </div>
-                        <h2 style={{ fontSize: '38px', margin: 0, fontWeight: 800, color: 'var(--text-color, #dffafa)', letterSpacing: '-1px' }}>
+                        <h2 style={{ fontSize: '34px', margin: 0, fontWeight: 800, color: 'var(--text-color, #dffafa)', letterSpacing: '-1px' }}>
                             ₹{Number(animatedInventoryValue || 0).toLocaleString("en-IN")}
                         </h2>
                     </div>
                     <div style={{ textAlign: 'right', zIndex: 1 }}>
-                        <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-color, #dffafa)', margin: '0 0 2px' }}>{stats?.totalProducts ?? 0} products</p>
-                        <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-color, #dffafa)', margin: 0 }}>{stats?.totalStock ?? 0} units total</p>
+                        <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-color, #dffafa)', margin: '0 0 2px' }}>{stats?.totalProducts ?? 0} products</p>
+                        <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-color, #dffafa)', margin: 0 }}>{stats?.totalStock ?? 0} units total</p>
                     </div>
                 </div>
-                {/* Prominent sparkline chart */}
-                <div style={{ position: 'relative', zIndex: 0, height: '110px', marginLeft: '-28px', marginRight: '-28px' }}>
+                {/* Sparkline with first/last date axis labels — padded margins prevent label clipping */}
+                <div style={{ position: 'relative', zIndex: 0, height: '80px', marginLeft: '-28px', marginRight: '-28px' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={sparklineData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
+                        <AreaChart data={sparklineData} margin={{ top: 4, right: 36, left: 36, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="heroGrad" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#5de0d4" stopOpacity={0.3}/>
-                                    <stop offset="95%" stopColor="#5de0d4" stopOpacity={0}/>
+                                    <stop offset="0%" stopColor="#5de0d4" stopOpacity={0.22}/>
+                                    <stop offset="100%" stopColor="#5de0d4" stopOpacity={0}/>
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: 'rgba(6,29,32,0.95)', border: '1px solid rgba(93,224,212,0.2)', borderRadius: '8px', fontSize: '12px' }}
-                                formatter={(v) => [`₹${Number(v).toLocaleString('en-IN')}`, 'Value']}
-                                labelFormatter={() => ''}
+                            <XAxis
+                                dataKey="day"
+                                hide={false}
+                                tickLine={false}
+                                axisLine={false}
+                                fontSize={9}
+                                stroke="rgba(118,146,147,0.5)"
+                                interval={28}
+                                tickFormatter={(v) => {
+                                    const d = new Date();
+                                    d.setDate(d.getDate() - (29 - v));
+                                    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                                }}
                             />
-                            <Area type="monotone" dataKey="val" stroke="#5de0d4" strokeWidth={2.5} fillOpacity={1} fill="url(#heroGrad)" dot={false} activeDot={{ r: 4, fill: '#5de0d4', strokeWidth: 0 }} />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: 'rgba(6,29,32,0.97)', border: '1px solid rgba(93,224,212,0.2)', borderRadius: '8px', fontSize: '12px', padding: '6px 10px' }}
+                                formatter={(v) => [`₹${Number(v).toLocaleString('en-IN')}`, 'Value']}
+                                labelFormatter={(v) => {
+                                    const d = new Date();
+                                    d.setDate(d.getDate() - (29 - v));
+                                    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                                }}
+                                cursor={{ stroke: 'rgba(93,224,212,0.3)', strokeWidth: 1 }}
+                            />
+                            <Area type="monotone" dataKey="val" stroke="#5de0d4" strokeWidth={2} fillOpacity={1} fill="url(#heroGrad)" dot={false} activeDot={{ r: 3, fill: '#5de0d4', strokeWidth: 0 }} />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
@@ -469,12 +511,17 @@ function Dashboard({ user }) {
             {/* 4-CARD KPI ROW */}
             <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '20px' }}>
                 {[
-                    { label: 'Products', value: animatedTotalProducts, sub: '+2 this week', icon: <Package size={18} />, color: '#5de0d4', border: 'rgba(93,224,212,0.15)', spark: miniSpark(1) },
-                    { label: 'Total Units', value: animatedTotalStock, sub: 'In warehouse', icon: <Layers size={18} />, color: '#5de0d4', border: 'rgba(93,224,212,0.1)', spark: miniSpark(2) },
-                    { label: 'Low Stock', value: lowStockProducts, sub: 'Below reorder level', icon: <AlertTriangle size={18} />, color: '#e8b84d', border: 'rgba(232,184,77,0.2)', spark: miniSpark(3) },
-                    { label: 'Out of Stock', value: outOfStockProducts, sub: 'Needs immediate action', icon: <Ban size={18} />, color: '#ff6b6b', border: 'rgba(255,107,107,0.2)', spark: miniSpark(4) },
-                ].map(({ label, value, sub, icon, color, border, spark }) => {
+                    { label: 'Products',     value: animatedTotalProducts,  delta: { text: '+2 this week',        sign: +1 }, icon: <Package size={18} />,       color: '#5de0d4', border: 'rgba(93,224,212,0.15)',  spark: miniSpark(1) },
+                    { label: 'Total Units',  value: animatedTotalStock,     delta: { text: '+34 units this week', sign: +1 }, icon: <Layers size={18} />,         color: '#5de0d4', border: 'rgba(93,224,212,0.1)',   spark: miniSpark(2) },
+                    { label: 'Low Stock',    value: lowStockProducts,       delta: { text: '+1 since yesterday',  sign: -1 }, icon: <AlertTriangle size={18} />, color: '#e8b84d', border: 'rgba(232,184,77,0.2)',  spark: miniSpark(3) },
+                    { label: 'Out of Stock', value: outOfStockProducts,     delta: { text: '-2 since yesterday',  sign: +1 }, icon: <Ban size={18} />,            color: '#ff6b6b', border: 'rgba(255,107,107,0.2)', spark: miniSpark(4) },
+                ].map(({ label, value, delta, icon, color, border, spark }) => {
                     const isActive = activeKpi === label;
+                    // For stock-health metrics (low/out), FEWER is good — green when sign>0 (dropping), amber when sign<0 (rising)
+                    const isHealthMetric = label === 'Low Stock' || label === 'Out of Stock';
+                    const isGood = isHealthMetric ? delta.sign > 0 : delta.sign > 0;
+                    const deltaColor = isGood ? '#4bb9a2' : '#e8b84d';
+                    const arrow = delta.text.startsWith('-') ? '▼' : '▲';
                     return (
                         <div
                             key={label}
@@ -487,50 +534,95 @@ function Dashboard({ user }) {
                                 borderRadius: '12px',
                                 border: `1px solid ${isActive ? color : border}`,
                                 boxShadow: isActive ? `0 0 0 1px ${color}30, 0 0 20px ${color}18` : 'none',
-                                display: 'flex', flexDirection: 'column', gap: '4px',
+                                display: 'flex', flexDirection: 'column',
                                 position: 'relative', overflow: 'hidden',
-                                cursor: 'default'
+                                cursor: 'default',
+                                willChange: 'transform'
                             }}
                         >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            {/* Label row */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                 <span style={{ color: 'var(--text-muted, #769293)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>{label}</span>
-                                <div style={{ padding: '6px', backgroundColor: `${color}18`, borderRadius: '7px', color }}>{icon}</div>
+                                <div style={{ padding: '6px', backgroundColor: `${color}28`, borderRadius: '7px', color }}>{icon}</div>
                             </div>
-                            <div style={{ fontSize: '30px', fontWeight: 800, color: 'var(--text-color, #dffafa)', lineHeight: 1 }}>{value}</div>
-                            <div style={{ fontSize: '11px', color: 'var(--text-muted, #769293)', marginTop: '2px' }}>{sub}</div>
-                            <div style={{ position: 'absolute', bottom: 0, right: 0, width: '80px', height: '36px', opacity: isActive ? 0.9 : 0.5, transition: 'opacity 0.2s' }}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={spark}>
-                                        <defs>
-                                            <linearGradient id={`kpi-${label}`} x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor={color} stopOpacity={0.4}/>
-                                                <stop offset="95%" stopColor={color} stopOpacity={0}/>
-                                            </linearGradient>
-                                        </defs>
-                                        <Area type="monotone" dataKey="v" stroke={color} strokeWidth={1.5} fill={`url(#kpi-${label})`} dot={false} />
-                                    </AreaChart>
-                                </ResponsiveContainer>
+                            {/* Number + sparkline in same row */}
+                            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}>
+                                <div style={{ fontSize: '30px', fontWeight: 800, color: 'var(--text-color, #dffafa)', lineHeight: 1 }}>{value}</div>
+                                {/* Sparkline — beside the number. ID must have no spaces for SVG url() to resolve */}
+                                <div style={{ width: '70px', height: '32px', flexShrink: 0 }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={spark} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+                                            <defs>
+                                                <linearGradient id={`kpi-fill-${label.replace(/\s+/g, '-')}`} x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor={color} stopOpacity={0.25}/>
+                                                    <stop offset="100%" stopColor={color} stopOpacity={0}/>
+                                                </linearGradient>
+                                                <linearGradient id={`kpi-stroke-${label.replace(/\s+/g, '-')}`} x1="0" y1="0" x2="1" y2="0">
+                                                    <stop offset="0%" stopColor={color} stopOpacity={0}/>
+                                                    <stop offset="100%" stopColor={color} stopOpacity={1}/>
+                                                </linearGradient>
+                                            </defs>
+                                            <Area
+                                                type="monotone" dataKey="v"
+                                                stroke={`url(#kpi-stroke-${label.replace(/\s+/g, '-')})`}
+                                                strokeWidth={1.5}
+                                                fill={`url(#kpi-fill-${label.replace(/\s+/g, '-')})`}
+                                                dot={false}
+                                                activeDot={false}
+                                                isAnimationActive={false}
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                            {/* Delta pill — sized to text only */}
+                            <div style={{ display: 'flex' }}>
+                                <span style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '3px',
+                                    fontSize: '10px', fontWeight: 700, borderRadius: '4px',
+                                    padding: '2px 6px',
+                                    background: `${deltaColor}18`, color: deltaColor
+                                }}>
+                                    {arrow} {delta.text}
+                                </span>
                             </div>
                         </div>
                     );
                 })}
             </section>
 
-            {/* STOCK FLOW + DONUT ROW */}
-            <section style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '16px', marginBottom: '20px' }}>
+            {/* STOCK FLOW + DONUT ROW — alignItems:stretch so cards match height */}
+            <section style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '16px', marginBottom: '20px', alignItems: 'stretch' }}>
 
                 {/* STOCK FLOW CHART (60%) */}
                 <div className="dashboard-section db-section-card" style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div className="section-heading no-border">
-                        <div>
-                            <h2 style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted, #769293)', fontWeight: 600, margin: 0 }}>Stock Flow — 14 Days</h2>
+                    <div className="section-heading no-border" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h2 className="db-card-title">Stock Flow — 14 Days</h2>
+                        {/* Inline legend */}
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                                <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#4bb9a2' }} />
+                                Stock In
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                                <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#df8268' }} />
+                                Stock Out
+                            </div>
                         </div>
                     </div>
-                    <div style={{ padding: '0 20px 20px 20px', height: '260px' }}>
+                    {/* flex:1 so chart area fills remaining card height — no dead gap */}
+                    <div style={{ padding: '0 20px 20px 20px', flex: 1, minHeight: '220px' }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={aggregatedStockData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={11} tickLine={false} axisLine={false} />
+                                <XAxis
+                                    dataKey="date"
+                                    stroke="var(--text-muted)"
+                                    fontSize={10}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    interval="preserveStartEnd"
+                                />
                                 <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} axisLine={false} width={30} />
                                 <Tooltip cursor={{ fill: 'rgba(255,255,255,0.02)' }} contentStyle={{ backgroundColor: 'var(--card-bg, #061d20)', border: '1px solid rgba(93,224,212,0.2)', borderRadius: '8px', fontSize: '12px' }} />
                                 <Bar dataKey="in" name="Stock In" fill="#4bb9a2" radius={[3,3,0,0]} barSize={10} />
@@ -543,11 +635,15 @@ function Dashboard({ user }) {
                 {/* DONUT + CATEGORY BARS (40%) */}
                 <div className="dashboard-section db-section-card" style={{ display: 'flex', flexDirection: 'column' }}>
                     <div className="section-heading no-border">
-                        <div><h2>Inventory Status</h2></div>
+                        <div><h2 className="db-card-title">Inventory Status</h2></div>
                     </div>
                     <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                        {/* Donut */}
-                        <div style={{ position: 'relative', height: '160px' }}>
+                        {/* Donut — tabIndex so it's focusable, outline suppressed in favour of teal ring */}
+                        <div style={{ position: 'relative', height: '160px', outline: 'none' }}
+                            tabIndex={-1}
+                            onFocus={e => e.currentTarget.style.boxShadow = '0 0 0 2px rgba(93,224,212,0.5)'}
+                            onBlur={e => e.currentTarget.style.boxShadow = 'none'}
+                        >
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
@@ -586,13 +682,14 @@ function Dashboard({ user }) {
                                 </div>
                             ))}
                         </div>
-                        {/* Category bars */}
+                        {/* Category bars — single teal family, not status colors */}
                         <div style={{ borderTop: '1px solid rgba(93,224,212,0.08)', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '7px' }}>
                             <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Units by Category</div>
                             {chartData.slice(0, 4).map((cat, i) => {
                                 const maxStock = chartData[0]?.stock || 1;
                                 const pct = Math.round((cat.stock / maxStock) * 100);
-                                const catColors = ['#5de0d4', '#4bb9a2', '#e8b84d', '#df8268'];
+                                // Single teal hue family — no amber/coral to avoid status confusion
+                                const catColors = ['#5de0d4', '#4bb9a2', '#3a9e8e', '#2d7d70'];
                                 return (
                                     <div key={cat.name}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '3px' }}>
@@ -600,7 +697,7 @@ function Dashboard({ user }) {
                                             <span>{cat.stock} units</span>
                                         </div>
                                         <div style={{ height: '5px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
-                                            <div style={{ width: `${pct}%`, height: '100%', backgroundColor: catColors[i] || '#5de0d4', borderRadius: '3px', transition: 'width 0.8s ease' }}></div>
+                                            <div style={{ width: `${pct}%`, height: '100%', backgroundColor: catColors[i] || '#5de0d4', borderRadius: '3px', transition: 'width 0.8s ease' }} />
                                         </div>
                                     </div>
                                 );
@@ -610,13 +707,13 @@ function Dashboard({ user }) {
                 </div>
             </section>
 
-            {/* TOP MOVING + REORDER ROW */}
-            <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+            {/* TOP MOVING + REORDER ROW — align start so cards don't over-stretch */}
+            <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px', alignItems: 'start' }}>
 
                 {/* TOP MOVING PRODUCTS */}
                 <div className="dashboard-section db-section-card" style={{ display: 'flex', flexDirection: 'column' }}>
                     <div className="section-heading no-border">
-                        <div><h2 style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted, #769293)', fontWeight: 600, margin: 0 }}>Top Moving Products</h2></div>
+                        <div><h2 className="db-card-title">Top Moving Products</h2></div>
                         <button className="section-link" onClick={() => window.dispatchEvent(new CustomEvent("open-history"))} style={{ fontSize: '13px' }}>
                             View history →
                         </button>
@@ -644,7 +741,7 @@ function Dashboard({ user }) {
                 {/* COMPACT REORDER LIST */}
                 <div className="dashboard-section db-section-card" style={{ display: 'flex', flexDirection: 'column' }}>
                     <div className="section-heading no-border">
-                        <div><h2 style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted, #769293)', fontWeight: 600, margin: 0 }}>Reorder Required</h2></div>
+                        <div><h2 className="db-card-title">Reorder Required</h2></div>
                         <button className="section-link" onClick={() => window.dispatchEvent(new CustomEvent("open-reorder-center"))} style={{ fontSize: '13px' }}>
                             View all →
                         </button>
@@ -655,22 +752,33 @@ function Dashboard({ user }) {
                                 <CheckCircle2 size={32} color="#4bb9a2" />
                                 <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>All stock levels healthy</span>
                             </div>
-                        ) : reorderProducts.slice(0, 6).map((product, idx) => {
+                        ) : [...reorderProducts]
+                            // Sort urgency: out-of-stock (qty=0) first, then by lowest stock ratio
+                            .sort((a, b) => {
+                                const aQty = Number(a.currentStock) || 0;
+                                const bQty = Number(b.currentStock) || 0;
+                                const aRatio = aQty / (Number(a.reorderLevel) || 1);
+                                const bRatio = bQty / (Number(b.reorderLevel) || 1);
+                                if (aQty === 0 && bQty !== 0) return -1;
+                                if (bQty === 0 && aQty !== 0) return 1;
+                                return aRatio - bRatio;
+                            })
+                            .slice(0, 6).map((product, idx, arr) => {
                             const stockQty = Number(product.currentStock) || 0;
                             const reorderLvl = Number(product.reorderLevel) || 1;
                             const pct = Math.min(100, (stockQty / reorderLvl) * 100);
                             const isOut = stockQty === 0;
                             const accentColor = isOut ? '#ff6b6b' : '#e8b84d';
                             return (
-                                <div key={product.productId} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 0', borderBottom: idx < reorderProducts.slice(0,6).length - 1 ? '1px solid rgba(93,224,212,0.07)' : 'none' }}>
-                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: accentColor, flexShrink: 0 }}></div>
+                                <div key={product.productId} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 0', borderBottom: idx < arr.length - 1 ? '1px solid rgba(93,224,212,0.07)' : 'none' }}>
+                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: accentColor, flexShrink: 0 }} />
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
                                             <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-color)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.name}</span>
                                             <span style={{ fontSize: '12px', fontWeight: 700, color: accentColor, flexShrink: 0, marginLeft: '8px' }}>{stockQty}/{reorderLvl}</span>
                                         </div>
                                         <div style={{ height: '4px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
-                                            <div style={{ width: `${pct}%`, height: '100%', backgroundColor: accentColor, borderRadius: '2px', transition: 'width 0.6s ease' }}></div>
+                                            <div style={{ width: `${pct}%`, height: '100%', backgroundColor: accentColor, borderRadius: '2px', transition: 'width 0.6s ease' }} />
                                         </div>
                                     </div>
                                     <button

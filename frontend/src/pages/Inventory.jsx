@@ -2,10 +2,11 @@ import { useEffect, useState, useMemo } from "react";
 import { getProducts, updateStock, getCategories, createProduct } from "../services/api";
 import { 
     Search, Plus, Filter, Package, AlertTriangle, Layers, Check, X, 
-    Download, ChevronDown, ChevronUp, MoreHorizontal, ArrowLeft, ArrowRight, Minus 
+    Download, ChevronDown, ChevronUp, MoreHorizontal, ArrowLeft, ArrowRight, Minus,
+    Bell, RefreshCw, CheckCircle2, HardDrive, Monitor, Cable, PenTool, Smartphone, Laptop 
 } from "lucide-react";
 
-function Inventory() {
+function Inventory({ user = { name: "Sarah Chen", role: "Manager" } }) {
     const [products, setProducts] = useState([]);
     const [search, setSearch] = useState("");
     const [filterCategory, setFilterCategory] = useState("all");
@@ -24,8 +25,22 @@ function Inventory() {
     // New States for requested features
     const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const [itemsPerPage, setItemsPerPage] = useState(10);
     const [selectedIds, setSelectedIds] = useState([]);
+    
+    // Top bar state
+    const [bellOpen, setBellOpen] = useState(false);
+    const alertItems = [
+        { name: "MacBook Pro 16\"", msg: "Only 2 left in stock", color: "#f8a849" },
+        { name: "Sony WH-1000XM5", msg: "Out of stock", color: "#ff6b6b" },
+        { name: "Dell UltraSharp 27\"", msg: "Only 1 left in stock", color: "#f8a849" },
+        { name: "Logitech MX Master 3S", msg: "Out of stock", color: "#ff6b6b" },
+        { name: "Samsung 990 PRO 2TB", msg: "Only 3 left in stock", color: "#f8a849" },
+        { name: "Anker 737 Power Bank", msg: "Out of stock", color: "#ff6b6b" },
+        { name: "Keychron Q1 Pro", msg: "Only 2 left in stock", color: "#f8a849" },
+        { name: "CalDigit TS4 Dock", msg: "Only 1 left in stock", color: "#f8a849" }
+    ];
+    const alertCount = alertItems.length;
 
     // Drawer state
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -201,20 +216,114 @@ function Inventory() {
     const totalUnits = filteredAndSortedProducts.reduce((sum, p) => sum + p.stockQuantity, 0);
     const needsRestockCount = filteredAndSortedProducts.filter(p => p.stockQuantity > 0 && p.stockQuantity < p.reorderLevel).length;
 
+    const getCategoryIcon = (categoryName) => {
+        const name = (categoryName || "").toLowerCase();
+        if (name.includes('storage') || name.includes('drive') || name.includes('ssd')) return <HardDrive size={18} />;
+        if (name.includes('monitor') || name.includes('display')) return <Monitor size={18} />;
+        if (name.includes('cable') || name.includes('adapter')) return <Cable size={18} />;
+        if (name.includes('office') || name.includes('pen')) return <PenTool size={18} />;
+        if (name.includes('laptop') || name.includes('computer') || name.includes('macbook')) return <Laptop size={18} />;
+        if (name.includes('phone') || name.includes('mobile')) return <Smartphone size={18} />;
+        return <Package size={18} />;
+    };
+
     return (
         <div className="page" style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '40px', position: 'relative' }}>
+            {/* ═══ MERGED TOP BAR ═══ */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', backgroundColor: 'var(--card-bg, #061d20)', padding: '10px 20px', borderRadius: '12px', border: '1px solid rgba(93, 224, 212, 0.1)' }}>
+                {/* Left: greeting */}
+                <div>
+                    <h1 style={{ fontSize: '18px', margin: 0, fontWeight: 700, color: 'var(--text-color,#dffafa)' }}>
+                        Inventory
+                    </h1>
+                    <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted,#769293)' }}>Manage and track your product inventory.</p>
+                </div>
+
+                {/* Centre: search */}
+                <div className="db-search-bar" style={{ display: 'flex', alignItems: 'center', borderRadius: '8px', padding: '7px 14px', width: '34%', backgroundColor: 'var(--elem-bg, rgba(255,255,255,0.05))', border: '1px solid var(--elem-border, rgba(255,255,255,0.05))' }}>
+                    <Search size={15} color="var(--text-muted,#769293)" />
+                    <input type="text" placeholder="Global search..." style={{ background: 'none', border: 'none', outline: 'none', color: 'var(--text-color,#dffafa)', marginLeft: '10px', width: '100%', fontSize: '13px' }} />
+                    <div className="db-kbd-chip" style={{ fontSize: '10px', padding: '2px 6px', backgroundColor: 'var(--card-bg)', borderRadius: '4px', color: 'var(--text-muted)', border: '1px solid var(--elem-border)' }}>⌘K</div>
+                </div>
+
+                {/* Right: live indicator + date + bell + user */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div className="db-live-wrap" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted,#769293)', position: 'relative' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#5de0d4' }}>
+                            <span style={{ width: '6px', height: '6px', backgroundColor: 'currentColor', borderRadius: '50%', boxShadow: '0 0 8px currentColor' }} />
+                            Live
+                        </span>
+                        <span style={{ opacity: 0.4 }}>·</span>
+                        <span>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+                        <button style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--text-muted,#769293)', display: 'flex', opacity: 0.7 }}>
+                            <RefreshCw size={12} />
+                        </button>
+                    </div>
+
+                    <div style={{ width: '1px', height: '22px', backgroundColor: 'rgba(255,255,255,0.08)' }}></div>
+
+                    {/* Bell */}
+                    <div style={{ position: 'relative' }}>
+                        <button
+                            onClick={() => setBellOpen(o => !o)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', color: bellOpen ? '#5de0d4' : 'var(--text-muted,#769293)' }}
+                        >
+                            <Bell size={20} />
+                            {alertCount > 0 && (
+                                <div style={{ position: 'absolute', top: -1, right: -1, minWidth: '16px', height: '16px', backgroundColor: '#ff6b6b', borderRadius: '8px', border: '2px solid var(--card-bg,#061d20)', fontSize: '9px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, padding: '0 3px' }}>
+                                    {alertCount > 9 ? '9+' : alertCount}
+                                </div>
+                            )}
+                        </button>
+
+                        {bellOpen && (
+                            <div className="bell-dropdown" style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0, width: '300px', backgroundColor: 'var(--card-bg,#061d20)', border: '1px solid rgba(93,224,212,0.15)', borderRadius: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', zIndex: 1000, overflow: 'hidden' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid rgba(93,224,212,0.1)' }}>
+                                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-color,#dffafa)' }}>Stock Alerts</span>
+                                    <button onClick={() => setBellOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted,#769293)', display: 'flex' }}><X size={14} /></button>
+                                </div>
+                                <div style={{ maxHeight: '260px', overflowY: 'auto' }}>
+                                    {alertItems.map((a, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', borderBottom: i < alertItems.length - 1 ? '1px solid rgba(93,224,212,0.06)' : 'none' }}>
+                                            <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: a.color, flexShrink: 0 }}></div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-color,#dffafa)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</div>
+                                                <div style={{ fontSize: '11px', color: a.color }}>{a.msg}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div style={{ width: '1px', height: '22px', backgroundColor: 'rgba(255,255,255,0.08)' }}></div>
+
+                    {/* User chip */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                        <div style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: 'var(--primary-light,#5de0d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontWeight: 700, fontSize: '13px' }}>
+                            {user?.name?.charAt(0) || "U"}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-color,#dffafa)', lineHeight: 1.2 }}>{user?.name || "User"}</span>
+                            <span style={{ fontSize: '10px', color: 'var(--text-muted,#769293)' }}>{user?.role || "Manager"}</span>
+                        </div>
+                        <ChevronDown size={13} color="var(--text-muted,#769293)" />
+                    </div>
+                </div>
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
                 <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '0 0 4px 0', color: 'var(--text-color, #dffafa)' }}>Inventory</h1>
-                    <p style={{ margin: 0, color: 'var(--text-muted, #769293)', fontSize: '14px' }}>Manage and monitor your products</p>
+                    <h2 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 4px 0', color: 'var(--text-color, #dffafa)' }}>All Products</h2>
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
                     <button 
                         onClick={exportCSV}
                         style={{
                             display: 'flex', alignItems: 'center', gap: '8px',
-                            backgroundColor: 'rgba(255,255,255,0.05)', color: 'var(--text-color, #dffafa)',
-                            border: '1px solid rgba(255,255,255,0.1)', padding: '10px 16px', 
+                            backgroundColor: 'var(--card-bg, #ffffff)', color: 'var(--text-color, #dffafa)',
+                            border: '1px solid var(--elem-border, rgba(255,255,255,0.1))', padding: '10px 16px', 
                             borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer'
                         }}
                     >
@@ -268,38 +377,49 @@ function Inventory() {
                             placeholder="Search products or SKU..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            style={{ width: '100%', padding: '12px 12px 12px 36px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'var(--text-color, #dffafa)', fontSize: '14px', outline: 'none' }}
+                            style={{ width: '100%', padding: '12px 12px 12px 36px', backgroundColor: 'var(--elem-bg, rgba(255,255,255,0.03))', border: '1px solid var(--elem-border, rgba(255,255,255,0.1))', borderRadius: '8px', color: 'var(--text-color, #dffafa)', fontSize: '14px', outline: 'none' }}
                         />
                     </div>
                 </div>
                 
                 {/* Filter Chips */}
-                <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Status:</span>
-                        {['all', 'in_stock', 'low_stock', 'out_of_stock'].map(status => (
-                            <button 
-                                key={status}
-                                onClick={() => { setFilterStatus(status); setCurrentPage(1); }}
-                                style={{ 
-                                    padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: 'none',
-                                    backgroundColor: filterStatus === status ? 'var(--primary-light, #5de0d4)' : 'rgba(255,255,255,0.05)',
-                                    color: filterStatus === status ? '#000' : 'var(--text-muted)', transition: 'all 0.2s'
-                                }}
-                            >
-                                {status.replace('_', ' ').toUpperCase()}
-                            </button>
-                        ))}
+                        {['all', 'in_stock', 'low_stock', 'out_of_stock'].map(status => {
+                            const count = products.filter(p => {
+                                if (status === 'all') return true;
+                                const isOut = p.stockQuantity === 0;
+                                const isLow = !isOut && p.stockQuantity <= p.reorderLevel;
+                                if (status === 'in_stock') return !isOut && !isLow;
+                                if (status === 'low_stock') return isLow;
+                                if (status === 'out_of_stock') return isOut;
+                                return false;
+                            }).length;
+                            return (
+                                <button 
+                                    key={status}
+                                    onClick={() => { setFilterStatus(status); setCurrentPage(1); }}
+                                    style={{ 
+                                        padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: 'none', whiteSpace: 'nowrap',
+                                        backgroundColor: filterStatus === status ? 'var(--primary-light, #5de0d4)' : 'var(--elem-bg, rgba(255,255,255,0.05))',
+                                        color: filterStatus === status ? '#000' : 'var(--text-muted)', transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {status.replace(/_/g, ' ').toUpperCase()} {count}
+                                </button>
+                            );
+                        })}
                     </div>
                     <div style={{ width: '1px', height: '20px', backgroundColor: 'rgba(255,255,255,0.1)' }}></div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Category:</span>
-                        <button onClick={() => { setFilterCategory('all'); setCurrentPage(1); }} style={{ padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: 'none', backgroundColor: filterCategory === 'all' ? 'var(--primary-light)' : 'rgba(255,255,255,0.05)', color: filterCategory === 'all' ? '#000' : 'var(--text-muted)' }}>All</button>
+                        <button onClick={() => { setFilterCategory('all'); setCurrentPage(1); }} style={{ padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: 'none', whiteSpace: 'nowrap', backgroundColor: filterCategory === 'all' ? 'var(--primary-light, #5de0d4)' : 'var(--elem-bg, rgba(255,255,255,0.05))', color: filterCategory === 'all' ? '#000' : 'var(--text-muted)' }}>All</button>
                         {categories.map(cat => (
                             <button 
                                 key={cat._id}
                                 onClick={() => { setFilterCategory(cat._id); setCurrentPage(1); }}
-                                style={{ padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: 'none', backgroundColor: filterCategory === cat._id ? 'var(--primary-light)' : 'rgba(255,255,255,0.05)', color: filterCategory === cat._id ? '#000' : 'var(--text-muted)' }}
+                                style={{ padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: 'none', whiteSpace: 'nowrap', backgroundColor: filterCategory === cat._id ? 'var(--primary-light, #5de0d4)' : 'var(--elem-bg, rgba(255,255,255,0.05))', color: filterCategory === cat._id ? '#000' : 'var(--text-muted)' }}
                             >
                                 {cat.name}
                             </button>
@@ -323,9 +443,9 @@ function Inventory() {
                     <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
-                                <tr style={{ backgroundColor: 'rgba(0,0,0,0.1)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                <tr style={{ backgroundColor: 'var(--table-header-bg, rgba(0,0,0,0.1))', borderBottom: '1px solid var(--elem-border, rgba(255,255,255,0.05))' }}>
                                     <th style={{ padding: '16px 16px', width: '40px' }}>
-                                        <input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === paginatedProducts.length && paginatedProducts.length > 0} style={{ cursor: 'pointer' }} />
+                                        <input type="checkbox" className="custom-checkbox" onChange={handleSelectAll} checked={selectedIds.length === paginatedProducts.length && paginatedProducts.length > 0} style={{ cursor: 'pointer' }} />
                                     </th>
                                     {[
                                         { key: 'name', label: 'Product' },
@@ -337,12 +457,14 @@ function Inventory() {
                                         <th 
                                             key={col.key} 
                                             onClick={() => handleSort(col.key)}
-                                            style={{ padding: '16px 16px', color: 'var(--text-muted, #769293)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}
+                                            style={{ padding: '16px 16px', color: 'var(--text-muted, #769293)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600, cursor: 'pointer', userSelect: 'none', textAlign: col.key === 'price' ? 'right' : 'left' }}
                                         >
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: col.key === 'price' ? 'flex-end' : 'flex-start', gap: '4px' }}>
                                                 {col.label}
-                                                {sortConfig.key === col.key && (
+                                                {sortConfig.key === col.key ? (
                                                     sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
+                                                ) : (
+                                                    <div style={{ width: '12px', height: '12px', opacity: 0.2 }}><ChevronDown size={12} /></div>
                                                 )}
                                             </div>
                                         </th>
@@ -359,30 +481,34 @@ function Inventory() {
                                     const stockProgress = product.reorderLevel > 0 ? Math.min(100, (product.stockQuantity / product.reorderLevel) * 100) : 100;
 
                                     return (
-                                        <tr key={product._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', backgroundColor: selectedIds.includes(product._id) ? 'rgba(93, 224, 212, 0.05)' : 'transparent', transition: 'background-color 0.2s' }}>
+                                        <tr key={product._id} className="inventory-table-row" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', backgroundColor: selectedIds.includes(product._id) ? 'var(--row-selected, rgba(93, 224, 212, 0.05))' : 'transparent', transition: 'background-color 0.2s' }}>
                                             <td style={{ padding: '16px 16px' }}>
-                                                <input type="checkbox" checked={selectedIds.includes(product._id)} onChange={() => toggleSelect(product._id)} style={{ cursor: 'pointer' }} />
+                                                <input type="checkbox" className="custom-checkbox" checked={selectedIds.includes(product._id)} onChange={() => toggleSelect(product._id)} style={{ cursor: 'pointer' }} />
                                             </td>
                                             <td style={{ padding: '16px 16px' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: `${statusColor}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 700, color: statusColor }}>
-                                                        {product.name.charAt(0)}
+                                                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: `${statusColor}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: statusColor }}>
+                                                        {getCategoryIcon(product.category?.name)}
                                                     </div>
                                                     <div>
                                                         <div style={{ fontWeight: 600, color: 'var(--text-color, #dffafa)', fontSize: '14px', marginBottom: '4px' }}>{product.name}</div>
-                                                        <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', color: statusColor, padding: '2px 6px', backgroundColor: `${statusColor}15`, borderRadius: '4px' }}>
+                                                        <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', color: statusColor, padding: '2px 6px', backgroundColor: `${statusColor}15`, borderRadius: '4px', whiteSpace: 'nowrap' }}>
                                                             {statusLabel}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td style={{ padding: '16px 16px', color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'monospace' }}>{product.sku || "—"}</td>
-                                            <td style={{ padding: '16px 16px', color: 'var(--text-muted)', fontSize: '13px' }}>{product.category?.name || "—"}</td>
-                                            <td style={{ padding: '16px 16px', color: 'var(--text-color)', fontSize: '14px', fontWeight: 500 }}>₹{Number(product.price).toLocaleString("en-IN")}</td>
+                                            <td style={{ padding: '16px 16px', color: 'var(--text-muted)', fontSize: '13px' }}>
+                                                <span style={{ padding: '4px 8px', backgroundColor: 'var(--elem-bg, rgba(255,255,255,0.05))', borderRadius: '4px', fontSize: '12px', border: 'none', whiteSpace: 'nowrap' }}>
+                                                    {product.category?.name || "—"}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '16px 16px', color: 'var(--text-color)', fontSize: '14px', fontWeight: 500, textAlign: 'right' }}>₹{Number(product.price).toLocaleString("en-IN")}</td>
                                             <td style={{ padding: '16px 16px', width: '150px' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
-                                                    <strong style={{ color: 'var(--text-color)' }}>{product.stockQuantity}</strong>
-                                                    <span style={{ color: 'var(--text-muted)' }}>/ {product.reorderLevel}</span>
+                                                    <strong style={{ color: 'var(--text-color)' }}>{product.stockQuantity} units</strong>
+                                                    <span style={{ color: 'var(--text-muted)' }}>min {product.reorderLevel}</span>
                                                 </div>
                                                 <div style={{ width: '100%', height: '4px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
                                                     <div style={{ width: `${stockProgress}%`, height: '100%', backgroundColor: statusColor }}></div>
@@ -390,7 +516,7 @@ function Inventory() {
                                             </td>
                                             <td style={{ padding: '16px 24px', textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                                                    <button onClick={() => openDrawer(product)} style={{ padding: '6px 12px', backgroundColor: 'rgba(93, 224, 212, 0.1)', color: 'var(--primary-light)', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                                    <button onClick={() => openDrawer(product)} className="update-stock-btn" style={{ padding: '6px 12px', backgroundColor: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--elem-border, rgba(255,255,255,0.1))', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
                                                         Update Stock
                                                     </button>
                                                     <button style={{ padding: '6px', backgroundColor: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer' }}>
@@ -407,14 +533,41 @@ function Inventory() {
                 )}
                 
                 {/* Pagination */}
-                {totalPages > 1 && (
+                {totalPages > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedProducts.length)} of {filteredAndSortedProducts.length}
-                        </span>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ padding: '6px', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.05)', border: 'none', color: currentPage === 1 ? 'rgba(255,255,255,0.2)' : 'var(--text-color)', cursor: currentPage === 1 ? 'default' : 'pointer' }}><ArrowLeft size={16} /></button>
-                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ padding: '6px', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.05)', border: 'none', color: currentPage === totalPages ? 'rgba(255,255,255,0.2)' : 'var(--text-color)', cursor: currentPage === totalPages ? 'default' : 'pointer' }}><ArrowRight size={16} /></button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                                Showing {filteredAndSortedProducts.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedProducts.length)} of {filteredAndSortedProducts.length}
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)' }}>
+                                Rows per page:
+                                <select 
+                                    value={itemsPerPage}
+                                    onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                                    style={{ backgroundColor: 'var(--elem-bg, rgba(255,255,255,0.05))', color: 'var(--text-color)', border: '1px solid var(--elem-border, rgba(255,255,255,0.05))', borderRadius: '4px', padding: '4px 8px', outline: 'none', cursor: 'pointer' }}
+                                >
+                                    <option value={10}>10</option>
+                                    <option value={25}>25</option>
+                                    <option value={50}>50</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ padding: '6px', borderRadius: '6px', backgroundColor: 'var(--elem-bg, rgba(255,255,255,0.05))', border: 'none', color: currentPage === 1 ? 'var(--btn-disabled, rgba(255,255,255,0.2))' : 'var(--text-color)', cursor: currentPage === 1 ? 'default' : 'pointer' }}><ArrowLeft size={16} /></button>
+                            
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                                    <button 
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer', backgroundColor: currentPage === pageNum ? 'var(--primary-light, #5de0d4)' : 'transparent', color: currentPage === pageNum ? '#000' : 'var(--text-muted)', transition: 'all 0.2s' }}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ padding: '6px', borderRadius: '6px', backgroundColor: 'var(--elem-bg, rgba(255,255,255,0.05))', border: 'none', color: currentPage === totalPages ? 'var(--btn-disabled, rgba(255,255,255,0.2))' : 'var(--text-color)', cursor: currentPage === totalPages ? 'default' : 'pointer' }}><ArrowRight size={16} /></button>
                         </div>
                     </div>
                 )}
@@ -482,8 +635,19 @@ function Inventory() {
                     </div>
                 </div>
             )}
+            {/* Bulk Selection Floating Bar */}
+            {selectedIds.length > 0 && (
+                <div style={{ position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--primary-light, #5de0d4)', color: '#000', padding: '12px 24px', borderRadius: '32px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', zIndex: 100, animation: 'slideUp 0.3s forwards' }}>
+                    <strong style={{ fontSize: '14px' }}>{selectedIds.length} selected</strong>
+                    <div style={{ width: '1px', height: '16px', backgroundColor: 'rgba(0,0,0,0.2)' }}></div>
+                    <button style={{ background: 'none', border: 'none', color: '#000', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>Export</button>
+                    <button style={{ background: 'none', border: 'none', color: '#000', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>Restock</button>
+                    <button style={{ background: 'none', border: 'none', color: '#000', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>Delete</button>
+                </div>
+            )}
             <style dangerouslySetInnerHTML={{__html: `
                 @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+                @keyframes slideUp { from { transform: translate(-50%, 100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
             `}} />
         </div>
     );

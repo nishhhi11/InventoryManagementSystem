@@ -100,7 +100,7 @@ function Login({ onLogin, theme, toggleTheme }) {
                         <div style={{ position: 'relative', height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <div className="preview-chart"></div>
                             <div style={{ position: 'absolute', textAlign: 'center' }}>
-                                <div style={{ color: 'white', fontSize: '20px', fontWeight: 700 }}>67%</div>
+                                <div style={{ color: 'white', fontSize: '20px', fontWeight: 700 }}>60%</div>
                                 <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Healthy</div>
                             </div>
                         </div>

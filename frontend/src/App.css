@@ -14,10 +14,37 @@ body.light-theme {
     --surface: #ffffff;
     --surface-hover: #f8fafb;
     --border: rgba(0, 0, 0, 0.08);
+    --elem-bg: rgba(0, 0, 0, 0.04);
+    --elem-border: rgba(0, 0, 0, 0.12);
+    --table-header-bg: rgba(14, 140, 129, 0.08);
+    --btn-disabled: rgba(0, 0, 0, 0.25);
 }
 
 * {
     box-sizing: border-box;
+}
+
+/* Suppress browser blue focus ring on Recharts SVG — custom teal ring is used instead */
+.recharts-wrapper,
+.recharts-wrapper svg,
+.recharts-wrapper:focus,
+.recharts-wrapper svg:focus {
+    outline: none !important;
+}
+
+/* ── Smooth theme transition ─────────────────────────────────────── */
+/* Fades background + text so the dark↔light switch doesn't flash    */
+body,
+.sidebar,
+.dashboard-section,
+.db-section-card,
+.kpi-card,
+.stat-card {
+    transition:
+        background-color 0.22s ease,
+        background 0.22s ease,
+        border-color 0.22s ease,
+        color 0.22s ease;
 }
 
 body {
@@ -1083,13 +1110,16 @@ body.light-theme .role-pill {
 }
 
 body.light-theme .theme-toggle {
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    color: #5c7476;
+    /* Sidebar is dark teal in light mode, so text must be light */
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.15);
 }
 
 body.light-theme .theme-toggle:hover {
-    background: rgba(0, 0, 0, 0.05);
-    color: #1a2a2c;
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.55);
 }
 
 /* =========================================
@@ -1302,8 +1332,10 @@ body.light-theme .theme-toggle:hover {
 
 .section-heading h2 {
     margin: 0;
-    font-size: 15px;
-    font-weight: 650;
+    font-size: 12px;      /* was 15px — was overriding db-card-title and competing with content */
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
 }
 
 .section-heading p {
@@ -1663,7 +1695,7 @@ body.light-theme .nav-item.active {
 body.light-theme .stat-card,
 body.light-theme .dashboard-section {
     background: #ffffff;
-    border: none;
+    border: 1px solid rgba(0, 0, 0, 0.08);  /* was 'none' — caused Inventory Status to collapse */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
     border-radius: 12px;
 }
@@ -1690,8 +1722,57 @@ body.light-theme .stat-card-value {
 .no-border {
     border-bottom: none;
     min-height: auto;
-    padding: 15px 20px 5px;
+    padding: 15px 20px 14px; /* extra bottom gap so title breathes before first row */
 }
+
+/* ── Unified card title ─────────────────────────────────────────── */
+.db-card-title {
+    font-size: 12px;       /* 12px: readable but subordinate to numbers and content */
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--text-muted, #769293);
+    font-weight: 700;
+    margin: 0;
+}
+
+/* ── Dashboard search bar (dark default) ────────────────────────── */
+.db-search-bar {
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.db-kbd-chip {
+    font-size: 11px;
+    color: var(--text-muted, #769293);
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 2px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* light-mode overrides */
+body.light-theme .db-search-bar {
+    background-color: #f4f7f7;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .db-kbd-chip {
+    background-color: #e8eded;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    color: #879b9b;
+}
+
+body.light-theme .db-card-title {
+    color: #6a8385;       /* slightly darker than muted for readability on white */
+}
+
+/* KPI icon tiles — stronger tint in light mode so Low Stock / Out of Stock read clearly */
+body.light-theme .kpi-card [style*="backgroundColor"] {
+    opacity: 1;
+}
+
 
 .flex-between {
     display: flex;
@@ -2385,4 +2466,25 @@ body.light-theme .theme-toggle:focus-visible {
     justify-content: center;
     perspective: 1000px;
     padding: 24px;
+}
+
+/* Inventory Table Hover */
+.inventory-table-row:hover {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+body.light-theme .inventory-table-row:hover {
+    background-color: var(--surface-hover, #f8fafb) !important;
+}
+
+.inventory-table-row:hover .update-stock-btn {
+    border-color: rgba(93, 224, 212, 0.4) !important;
+    color: var(--primary-light, #5de0d4) !important;
+    background-color: rgba(93, 224, 212, 0.1) !important;
+}
+
+body.light-theme .inventory-table-row:hover .update-stock-btn {
+    border-color: rgba(14, 140, 129, 0.4) !important;
+    color: #0e8c81 !important;
+    background-color: rgba(14, 140, 129, 0.1) !important;
 }
