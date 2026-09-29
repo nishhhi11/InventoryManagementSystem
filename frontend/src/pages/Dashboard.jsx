@@ -180,6 +180,51 @@ function Dashboard({ user }) {
     });
     sparklineData[29].val = baseValue; // pin last point to real value
     
+    // Compute Real KPI Deltas
+    const now = new Date();
+    const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const newProductsCount = products.filter(p => new Date(p.createdAt) > lastWeek).length;
+    const productDelta = { text: `${newProductsCount > 0 ? '+' : ''}${newProductsCount} this week`, sign: newProductsCount };
+
+    const movementsThisWeek = movements.filter(m => new Date(m.createdAt) > lastWeek);
+    const unitsDeltaVal = movementsThisWeek.reduce((acc, m) => acc + (m.quantityChanged || 0), 0);
+    const unitsDelta = { text: `${unitsDeltaVal > 0 ? '+' : ''}${unitsDeltaVal} units this week`, sign: unitsDeltaVal };
+
+    const valDeltaNum = movementsThisWeek.reduce((acc, m) => {
+        const product = products.find(p => p._id === (m.product?._id || m.productId));
+        const price = product?.price || 0;
+        return acc + (m.quantityChanged * price);
+    }, 0);
+    
+    const currentInventoryValue = stats?.inventoryValue || 0;
+    const prevInventoryValue = currentInventoryValue - valDeltaNum;
+    const valDeltaPct = prevInventoryValue > 0 ? ((valDeltaNum / prevInventoryValue) * 100).toFixed(1) : 0;
+    const inventoryValueDelta = { 
+        text: `${valDeltaNum > 0 ? '+' : ''}${valDeltaPct}% this week`, 
+        sign: valDeltaNum 
+    };
+
+    let lowStockYesterday = 0;
+    let outOfStockYesterday = 0;
+    products.forEach(p => {
+        const movementsSinceYesterday = movements.filter(m => 
+            (m.product?._id === p._id || m.productId === p._id) && new Date(m.createdAt) > yesterday
+        );
+        const netChange = movementsSinceYesterday.reduce((acc, m) => acc + (m.quantityChanged || 0), 0);
+        const stockYesterday = p.stockQuantity - netChange;
+        if (stockYesterday === 0) outOfStockYesterday++;
+        else if (stockYesterday <= p.reorderLevel && stockYesterday > 0) lowStockYesterday++;
+    });
+
+    const lowStockDeltaVal = lowStockProducts - lowStockYesterday;
+    const lowStockDelta = { text: `${lowStockDeltaVal > 0 ? '+' : ''}${lowStockDeltaVal} since yesterday`, sign: -lowStockDeltaVal }; // sign inverted because increase in low stock is bad
+
+    const outOfStockDeltaVal = outOfStockProducts - outOfStockYesterday;
+    const outOfStockDelta = { text: `${outOfStockDeltaVal > 0 ? '+' : ''}${outOfStockDeltaVal} since yesterday`, sign: -outOfStockDeltaVal };
+
+    
     const animatedTotalProducts = useCountUp(stats?.totalProducts ?? 0);
     const animatedTotalStock = useCountUp(stats?.totalStock ?? 0);
     const animatedLowStock = useCountUp(stats?.lowStockProducts ?? 0);
@@ -455,8 +500,8 @@ function Dashboard({ user }) {
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
                             <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px', color: 'var(--text-muted, #769293)', textTransform: 'uppercase', margin: 0 }}>Total Inventory Value</p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: 'rgba(75,185,162,0.15)', color: '#4bb9a2', padding: '2px 7px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>
-                                <TrendingUp size={12} /> +4.2% this week
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: inventoryValueDelta.sign >= 0 ? 'rgba(75,185,162,0.15)' : 'rgba(255,107,107,0.15)', color: inventoryValueDelta.sign >= 0 ? '#4bb9a2' : '#ff6b6b', padding: '2px 7px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>
+                                {inventoryValueDelta.sign >= 0 ? <TrendingUp size={12} /> : null} {inventoryValueDelta.text}
                             </div>
                         </div>
                         <h2 style={{ fontSize: '34px', margin: 0, fontWeight: 800, color: 'var(--text-color, #dffafa)', letterSpacing: '-1px' }}>
@@ -511,11 +556,11 @@ function Dashboard({ user }) {
             {/* 4-CARD KPI ROW */}
             <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '20px' }}>
                 {[
-                    { label: 'Products',     value: animatedTotalProducts,  delta: { text: '+2 this week',        sign: +1 }, icon: <Package size={18} />,       color: '#5de0d4', border: 'rgba(93,224,212,0.15)',  spark: miniSpark(1) },
-                    { label: 'Total Units',  value: animatedTotalStock,     delta: { text: '+34 units this week', sign: +1 }, icon: <Layers size={18} />,         color: '#5de0d4', border: 'rgba(93,224,212,0.1)',   spark: miniSpark(2) },
-                    { label: 'Low Stock',    value: lowStockProducts,       delta: { text: '+1 since yesterday',  sign: -1 }, icon: <AlertTriangle size={18} />, color: '#e8b84d', border: 'rgba(232,184,77,0.2)',  spark: miniSpark(3) },
-                    { label: 'Out of Stock', value: outOfStockProducts,     delta: { text: '-2 since yesterday',  sign: +1 }, icon: <Ban size={18} />,            color: '#ff6b6b', border: 'rgba(255,107,107,0.2)', spark: miniSpark(4) },
-                ].map(({ label, value, delta, icon, color, border, spark }) => {
+                    { label: 'Products',     value: animatedTotalProducts,  delta: productDelta, icon: <Package size={18} />,       color: '#5de0d4', border: 'rgba(93,224,212,0.15)',  spark: miniSpark(1), action: () => window.dispatchEvent(new CustomEvent("open-inventory")) },
+                    { label: 'Total Units',  value: animatedTotalStock,     delta: unitsDelta, icon: <Layers size={18} />,         color: '#5de0d4', border: 'rgba(93,224,212,0.1)',   spark: miniSpark(2), action: () => window.dispatchEvent(new CustomEvent("open-inventory")) },
+                    { label: 'Low Stock',    value: animatedLowStock,       delta: lowStockDelta, icon: <AlertTriangle size={18} />, color: '#e8b84d', border: 'rgba(232,184,77,0.2)',  spark: miniSpark(3), action: () => { window.dispatchEvent(new CustomEvent("open-inventory")); setTimeout(() => window.dispatchEvent(new CustomEvent("set-inventory-filter", { detail: 'Low Stock' })), 50); } },
+                    { label: 'Out of Stock', value: animatedOutOfStock,     delta: outOfStockDelta, icon: <Ban size={18} />,            color: '#ff6b6b', border: 'rgba(255,107,107,0.2)', spark: miniSpark(4), action: () => window.dispatchEvent(new CustomEvent("open-reorder-center")) },
+                ].map(({ label, value, delta, icon, color, border, spark, action }) => {
                     const isActive = activeKpi === label;
                     // For stock-health metrics (low/out), FEWER is good — green when sign>0 (dropping), amber when sign<0 (rising)
                     const isHealthMetric = label === 'Low Stock' || label === 'Out of Stock';
@@ -528,6 +573,7 @@ function Dashboard({ user }) {
                             className="kpi-card"
                             onMouseEnter={() => setActiveKpi(label)}
                             onMouseLeave={() => setActiveKpi(null)}
+                            onClick={action}
                             style={{
                                 padding: '18px',
                                 background: 'var(--card-bg, #061d20)',
@@ -536,7 +582,7 @@ function Dashboard({ user }) {
                                 boxShadow: isActive ? `0 0 0 1px ${color}30, 0 0 20px ${color}18` : 'none',
                                 display: 'flex', flexDirection: 'column',
                                 position: 'relative', overflow: 'hidden',
-                                cursor: 'default',
+                                cursor: 'pointer',
                                 willChange: 'transform'
                             }}
                         >
@@ -611,9 +657,9 @@ function Dashboard({ user }) {
                         </div>
                     </div>
                     {/* flex:1 so chart area fills remaining card height — no dead gap */}
-                    <div style={{ padding: '0 20px 20px 20px', flex: 1, minHeight: '220px' }}>
+                    <div style={{ padding: '0 20px 20px 0px', flex: 1, minHeight: '220px' }}>
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={aggregatedStockData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                            <BarChart data={aggregatedStockData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                                 <XAxis
                                     dataKey="date"
@@ -623,8 +669,8 @@ function Dashboard({ user }) {
                                     axisLine={false}
                                     interval="preserveStartEnd"
                                 />
-                                <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} axisLine={false} width={30} />
-                                <Tooltip cursor={{ fill: 'rgba(255,255,255,0.02)' }} contentStyle={{ backgroundColor: 'var(--card-bg, #061d20)', border: '1px solid rgba(93,224,212,0.2)', borderRadius: '8px', fontSize: '12px' }} />
+                                <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} axisLine={false} width={35} />
+                                <Tooltip cursor={{ fill: 'rgba(255,255,255,0.02)' }} contentStyle={{ backgroundColor: 'var(--card-bg, #061d20)', border: '1px solid rgba(93,224,212,0.2)', borderRadius: '8px', fontSize: '12px' }} itemStyle={{ color: 'var(--text-color)' }} />
                                 <Bar dataKey="in" name="Stock In" fill="#4bb9a2" radius={[3,3,0,0]} barSize={10} />
                                 <Bar dataKey="out" name="Stock Out" fill="#df8268" radius={[3,3,0,0]} barSize={10} />
                             </BarChart>
@@ -837,7 +883,7 @@ function Dashboard({ user }) {
                                                         <div style={{ fontSize: '11px', color: 'var(--text-muted, #668789)', fontWeight: 500 }}>{timeAgo(movement.createdAt)}</div>
                                                     </div>
                                                 </div>
-                                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                                <div style={{ fontSize: '13px', color: 'var(--text-color, #dffafa)', opacity: 0.85, marginTop: '2px', fontWeight: 500 }}>
                                                     {getMovementType(movement)} · {movement.reason || "Manual Adjustment"}
                                                 </div>
                                             </div>

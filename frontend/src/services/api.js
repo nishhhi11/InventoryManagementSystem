@@ -58,6 +58,16 @@ export const createCategory = category =>
         body: JSON.stringify(category)
     });
 
+export const deleteCategory = id =>
+    request(`/categories/${id}`, {
+        method: "DELETE"
+    });
+
+export const deleteProduct = id =>
+    request(`/products/${id}`, {
+        method: "DELETE"
+    });
+
 export const getStockMovements = () =>
     request("/stock-movements");
 
