@@ -122,7 +122,7 @@
         {
           "name": "Update Category (Admin)",
           "request": {
-            "method": "PUT",
+            "method": "PATCH",
             "header": [
               {
                 "key": "Authorization",
@@ -307,7 +307,7 @@
         {
           "name": "Update Product",
           "request": {
-            "method": "PUT",
+            "method": "PATCH",
             "header": [
               {
                 "key": "Authorization",
@@ -406,13 +406,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/movements",
+              "raw": "{{base_url}}/api/stock-movements",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
-                "movements"
+                "stock-movements"
               ]
             }
           }
@@ -423,7 +423,7 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "http://localhost:5000",
+      "value": "http://localhost:3000",
       "type": "string"
     },
     {
