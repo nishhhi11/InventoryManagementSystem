@@ -6,7 +6,7 @@ const sendError = (res, message, error) => res.status(500).json({ message, error
 
 const registerUser = async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
+        const { name, email, password } = req.body;
 
         if (!name || !email || !password) {
             return res.status(400).json({ message: "Name, email and password are required" });
@@ -21,7 +21,7 @@ const registerUser = async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            role: role || "Staff"
+            role: "Staff"
         });
 
         res.status(201).json({
