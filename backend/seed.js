@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 require("dotenv").config();
+const bcrypt = require("bcryptjs");
 const User = require("./models/User");
 const Category = require("./models/Category");
 const Product = require("./models/Product");
@@ -18,11 +19,32 @@ const seedDatabase = async () => {
         await ActivityLog.deleteMany({});
         console.log("Wiped old products, categories, and logs.");
 
-        const user = await User.findOne();
-        if (!user) {
-            console.error("No user found. Please register a user first.");
-            process.exit(1);
+        // Ensure default Admin and Staff users exist
+        let adminUser = await User.findOne({ email: "admin@test.com" });
+        if (!adminUser) {
+            const adminPassword = await bcrypt.hash("password123", 10);
+            adminUser = await User.create({
+                name: "Admin User",
+                email: "admin@test.com",
+                password: adminPassword,
+                role: "Admin"
+            });
+            console.log("Created default Admin user: admin@test.com / password123");
         }
+
+        let staffUser = await User.findOne({ email: "staff@test.com" });
+        if (!staffUser) {
+            const staffPassword = await bcrypt.hash("password123", 10);
+            staffUser = await User.create({
+                name: "Staff User",
+                email: "staff@test.com",
+                password: staffPassword,
+                role: "Staff"
+            });
+            console.log("Created default Staff user: staff@test.com / password123");
+        }
+
+        const user = adminUser;
 
         // Create 5 Categories
         const catData = [
