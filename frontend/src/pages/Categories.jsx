@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createCategory, getCategories, deleteCategory } from "../services/api";
-import { Keyboard, Router, Plug, PenTool, Folder, Monitor, Cpu, Headset, Mouse, Trash2 } from "lucide-react";
+import { Folder, Trash2 } from "lucide-react";
 
 function Categories({ user }) {
     const [categories, setCategories] = useState([]);
@@ -22,7 +22,6 @@ function Categories({ user }) {
 
     const addCategory = async (e) => {
         e.preventDefault();
-
         try {
             await createCategory({ name, description });
             setName("");
@@ -58,7 +57,6 @@ function Categories({ user }) {
             {user.role === "Admin" && (
                 <section className="panel category-form">
                     <h3>Add Category</h3>
-
                     <form onSubmit={addCategory}>
                         <input
                             value={name}
@@ -66,19 +64,18 @@ function Categories({ user }) {
                             onChange={(e) => setName(e.target.value)}
                             required
                         />
-
                         <input
                             value={description}
                             placeholder="Description"
                             onChange={(e) => setDescription(e.target.value)}
                         />
-
                         <button className="primary-small">Add Category</button>
                     </form>
                 </section>
             )}
 
             <section className="panel">
+
                 {categories.length === 0 ? (
                     <div style={{ padding: '60px 20px', textAlign: 'center' }}>
                         <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'var(--text-muted)' }}>

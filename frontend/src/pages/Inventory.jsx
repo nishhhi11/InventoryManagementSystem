@@ -1,12 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
 import { getProducts, updateStock, getCategories, createProduct } from "../services/api";
 import { 
-    Search, Plus, Filter, Package, AlertTriangle, Layers, Check, X, 
-    Download, ChevronDown, ChevronUp, MoreHorizontal, ArrowLeft, ArrowRight, Minus,
-    Bell, RefreshCw, CheckCircle2, HardDrive, Monitor, Cable, PenTool, Smartphone, Laptop, Speaker, Mouse, Keyboard, Headphones, Square, Armchair
+    Search, Plus, Filter, Package, X, 
+    Download, ChevronDown, ChevronUp, ArrowLeft, ArrowRight, Minus,
+    Bell, RefreshCw, HardDrive, Monitor, Cable, PenTool, Smartphone, Laptop, Speaker, Mouse, Keyboard, Headphones, Square, Armchair
 } from "lucide-react";
 
 function Inventory({ user = { name: "Sarah Chen", role: "Manager" } }) {
+
     const [products, setProducts] = useState([]);
     const [search, setSearch] = useState("");
     const [filterCategory, setFilterCategory] = useState("all");

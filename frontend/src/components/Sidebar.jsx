@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Sun, Moon, LogOut, LayoutDashboard, Package, RefreshCcw, Tags, History, Activity, Box, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sun, Moon, LayoutDashboard, Package, RefreshCcw, Tags, History, Box, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getReorderProducts } from '../services/api';
 
 function Sidebar({ user, page, setPage, logout, theme, toggleTheme }) {

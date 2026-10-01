@@ -1,15 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import {
-    getProductStats,
-    getProducts,
-    getReorderProducts,
-    getStockMovements
-} from "../services/api";
-import StatCard from "../components/StatCard";
+import { getProductStats, getProducts, getReorderProducts, getStockMovements } from "../services/api";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { Search, RefreshCw, Package, AlertTriangle, Ban, Layers, Bell, TrendingUp, ChevronDown, CheckCircle2, X } from 'lucide-react';
 
 const useCountUp = (end, duration = 1500) => {
+
     const [count, setCount] = useState(0);
     useEffect(() => {
         let startTime = null;

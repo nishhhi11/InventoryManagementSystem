@@ -3,66 +3,34 @@ const Category = require("../models/Category");
 const StockMovement = require("../models/StockMovement");
 const ActivityLog = require("../models/ActivityLog");
 
-const sendError = (res, message, error) =>
-    res.status(500).json({ message, error: error.message });
-
-const notFound = (res, message) =>
-    res.status(404).json({ message });
+const sendError = (res, message, error) => res.status(500).json({ message, error: error.message });
+const notFound = (res, message) => res.status(404).json({ message });
 
 const createProduct = async (req, res) => {
     try {
-        const {
-            name,
-            sku,
-            description,
-            price,
-            stockQuantity,
-            reorderLevel,
-            category
-        } = req.body;
+        const { name, sku, description, price, stockQuantity, reorderLevel, category } = req.body;
 
         if (!name || !sku || price === undefined || stockQuantity === undefined || !category) {
-            return res.status(400).json({
-                message: "Name, SKU, price, stock quantity and category are required"
-            });
+            return res.status(400).json({ message: "Name, SKU, price, stock quantity and category are required" });
         }
-
         if (stockQuantity < 0) {
-            return res.status(400).json({
-                message: "Stock quantity cannot be negative"
-            });
+            return res.status(400).json({ message: "Stock quantity cannot be negative" });
         }
-
         if (reorderLevel !== undefined && reorderLevel < 0) {
-            return res.status(400).json({
-                message: "Reorder level cannot be negative"
-            });
+            return res.status(400).json({ message: "Reorder level cannot be negative" });
         }
-
         if (!await Category.findById(category)) {
             return notFound(res, "Category not found");
         }
-
         if (await Product.findOne({ sku })) {
-            return res.status(400).json({
-                message: "SKU already exists"
-            });
+            return res.status(400).json({ message: "SKU already exists" });
         }
 
         const product = await Product.create({
-            name,
-            sku,
-            description,
-            price,
-            stockQuantity,
-            reorderLevel,
-            category
+            name, sku, description, price, stockQuantity, reorderLevel, category
         });
 
-        res.status(201).json({
-            message: "Product created successfully",
-            product
-        });
+        res.status(201).json({ message: "Product created successfully", product });
     } catch (error) {
         sendError(res, "Failed to create product", error);
     }
@@ -79,17 +47,12 @@ const getProducts = async (req, res) => {
                 { sku: { $regex: search, $options: "i" } }
             ];
         }
-
         if (category) filter.category = category;
-
         if (lowStock === "true") {
-            filter.$expr = {
-                $lte: ["$stockQuantity", "$reorderLevel"]
-            };
+            filter.$expr = { $lte: ["$stockQuantity", "$reorderLevel"] };
         }
 
         const products = await Product.find(filter).populate("category", "name");
-
         res.status(200).json(products);
     } catch (error) {
         sendError(res, "Failed to fetch products", error);
@@ -98,13 +61,8 @@ const getProducts = async (req, res) => {
 
 const getProductById = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id).populate(
-            "category",
-            "name"
-        );
-
+        const product = await Product.findById(req.params.id).populate("category", "name");
         if (!product) return notFound(res, "Product not found");
-
         res.status(200).json(product);
     } catch (error) {
         sendError(res, "Failed to fetch product", error);
@@ -113,55 +71,26 @@ const getProductById = async (req, res) => {
 
 const updateProduct = async (req, res) => {
     try {
-        const {
-            name,
-            sku,
-            description,
-            price,
-            stockQuantity,
-            reorderLevel,
-            category
-        } = req.body;
+        const { name, sku, description, price, stockQuantity, reorderLevel, category } = req.body;
 
         if (stockQuantity !== undefined && stockQuantity < 0) {
-            return res.status(400).json({
-                message: "Stock quantity cannot be negative"
-            });
+            return res.status(400).json({ message: "Stock quantity cannot be negative" });
         }
-
         if (reorderLevel !== undefined && reorderLevel < 0) {
-            return res.status(400).json({
-                message: "Reorder level cannot be negative"
-            });
+            return res.status(400).json({ message: "Reorder level cannot be negative" });
         }
-
         if (category && !await Category.findById(category)) {
             return notFound(res, "Category not found");
         }
 
         const product = await Product.findByIdAndUpdate(
             req.params.id,
-            {
-                name,
-                sku,
-                description,
-                price,
-                stockQuantity,
-                reorderLevel,
-                category
-            },
-            {
-                new: true,
-                runValidators: true
-            }
+            { name, sku, description, price, stockQuantity, reorderLevel, category },
+            { new: true, runValidators: true }
         ).populate("category", "name");
 
         if (!product) return notFound(res, "Product not found");
-
-        res.status(200).json({
-            message: "Product updated successfully",
-            product
-        });
+        res.status(200).json({ message: "Product updated successfully", product });
     } catch (error) {
         sendError(res, "Failed to update product", error);
     }
@@ -172,25 +101,16 @@ const updateStock = async (req, res) => {
         const { stockQuantity, reason } = req.body;
 
         if (stockQuantity === undefined) {
-            return res.status(400).json({
-                message: "Stock quantity is required"
-            });
+            return res.status(400).json({ message: "Stock quantity is required" });
         }
-
         if (stockQuantity < 0) {
-            return res.status(400).json({
-                message: "Stock quantity cannot be negative"
-            });
+            return res.status(400).json({ message: "Stock quantity cannot be negative" });
         }
-
         if (!reason) {
-            return res.status(400).json({
-                message: "Stock update reason is required"
-            });
+            return res.status(400).json({ message: "Stock update reason is required" });
         }
 
         const product = await Product.findById(req.params.id);
-
         if (!product) return notFound(res, "Product not found");
 
         const previousQuantity = product.stockQuantity;
@@ -216,15 +136,8 @@ const updateStock = async (req, res) => {
             details: `Stock changed from ${previousQuantity} to ${stockQuantity}. Reason: ${reason}`
         });
 
-        const updatedProduct = await Product.findById(product._id).populate(
-            "category",
-            "name"
-        );
-
-        res.status(200).json({
-            message: "Stock updated successfully",
-            product: updatedProduct
-        });
+        const updatedProduct = await Product.findById(product._id).populate("category", "name");
+        res.status(200).json({ message: "Stock updated successfully", product: updatedProduct });
     } catch (error) {
         sendError(res, "Failed to update stock", error);
     }
@@ -233,12 +146,8 @@ const updateStock = async (req, res) => {
 const deleteProduct = async (req, res) => {
     try {
         const product = await Product.findByIdAndDelete(req.params.id);
-
         if (!product) return notFound(res, "Product not found");
-
-        res.status(200).json({
-            message: "Product deleted successfully"
-        });
+        res.status(200).json({ message: "Product deleted successfully" });
     } catch (error) {
         sendError(res, "Failed to delete product", error);
     }
@@ -254,33 +163,14 @@ const getProductStats = async (req, res) => {
                     _id: null,
                     totalStock: {
                         $sum: {
-                            $convert: {
-                                input: "$stockQuantity",
-                                to: "double",
-                                onError: 0,
-                                onNull: 0
-                            }
+                            $convert: { input: "$stockQuantity", to: "double", onError: 0, onNull: 0 }
                         }
                     },
                     inventoryValue: {
                         $sum: {
                             $multiply: [
-                                {
-                                    $convert: {
-                                        input: "$price",
-                                        to: "double",
-                                        onError: 0,
-                                        onNull: 0
-                                    }
-                                },
-                                {
-                                    $convert: {
-                                        input: "$stockQuantity",
-                                        to: "double",
-                                        onError: 0,
-                                        onNull: 0
-                                    }
-                                }
+                                { $convert: { input: "$price", to: "double", onError: 0, onNull: 0 } },
+                                { $convert: { input: "$stockQuantity", to: "double", onError: 0, onNull: 0 } }
                             ]
                         }
                     }
@@ -289,9 +179,7 @@ const getProductStats = async (req, res) => {
         ]);
 
         const lowStockProducts = await Product.countDocuments({
-            $expr: {
-                $lt: ["$stockQuantity", "$reorderLevel"]
-            }
+            $expr: { $lt: ["$stockQuantity", "$reorderLevel"] }
         });
 
         const totalCategories = await Category.countDocuments();
@@ -311,9 +199,7 @@ const getProductStats = async (req, res) => {
 const getReorderRecommendations = async (req, res) => {
     try {
         const products = await Product.find({
-            $expr: {
-                $lt: ["$stockQuantity", "$reorderLevel"]
-            }
+            $expr: { $lt: ["$stockQuantity", "$reorderLevel"] }
         }).populate("category", "name");
 
         const recommendations = products.map((product) => ({
